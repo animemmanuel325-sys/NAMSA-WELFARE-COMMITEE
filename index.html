@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://czuelcaucmzgaosgufyq.supabase.co; connect-src https://czuelcaucmzgaosgufyq.supabase.co wss://czuelcaucmzgaosgufyq.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
+<meta name="referrer" content="no-referrer">
+<script>if(window.top!==window.self){try{window.top.location=window.self.location}catch(e){document.documentElement.style.display='none'}}</script>
 <title>Pentecost University Nursing and Midwifery Student Association (NAMSA) - Welfare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -276,7 +279,20 @@ var LS={
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function $(id){return document.getElementById(id)}
 function toast(t){var d=document.createElement('div');d.className='toast';d.setAttribute('role','status');d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove()},3200)}
-function tel(n){return 'tel:'+String(n).replace(/[^0-9+]/g,'')}
+function waNum(n){var d=String(n).replace(/\D/g,'');if(d.indexOf('00')===0)d=d.slice(2);else if(d.charAt(0)==='0')d='233'+d.slice(1);return d}
+function tel(n){return 'tel:+'+waNum(n)}
+function phoneLink(n,bold){var t=esc(n);return '<a class="plink" href="'+esc(tel(n))+'" data-n="'+esc(n)+'" onclick="return phoneMenu(this,event)">'+(bold?'<b>'+t+'</b>':t)+'</a>'}
+function phoneMenu(el,ev){
+  if(ev)ev.preventDefault();
+  var n=el.getAttribute('data-n'),old=$('pm');if(old)old.remove();
+  var d=document.createElement('div');d.id='pm';d.className='lb';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','Contact '+n);
+  d.innerHTML='<div class="card" style="max-width:340px;width:100%;color:var(--ink);text-align:left"><h3 style="margin-top:0">'+esc(n)+'</h3><p>How would you like to reach us?</p><a class="btn dark" style="width:100%;margin-bottom:10px" href="'+esc(tel(n))+'">Phone call</a><a class="btn primary" style="width:100%;margin-bottom:10px" href="https://wa.me/'+waNum(n)+'" target="_blank" rel="noopener noreferrer">WhatsApp</a><button class="btn ghost" style="width:100%" type="button" id="pmx">Cancel</button></div>';
+  d.addEventListener('click',function(e){if(e.target===d||e.target.id==='pmx'||e.target.tagName==='A')setTimeout(function(){d.remove()},0)});
+  document.body.appendChild(d);
+  document.addEventListener('keydown',function k(e){if(e.key==='Escape'){d.remove();document.removeEventListener('keydown',k)}});
+  var f=d.querySelector('a');if(f)f.focus();
+  return false;
+}
 function uid(){return 'i'+Math.random().toString(36).slice(2,9)}
 function fmt(ts){try{return new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function fmtDay(ts){try{return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}catch(e){return ''}}
@@ -416,7 +432,7 @@ function drawNav(){
 }
 function drawFoot(){
   var c=C.contact;
-  $('foot').innerHTML='<p><b>'+esc(C.site.name)+'</b><br>Phone: '+c.phones.map(function(n){return '<a href="'+tel(n)+'">'+esc(n)+'</a>'}).join(' &middot; ')+'<br>Email: <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a></p><p><a href="#/gallery">Gallery</a> &middot; <a href="#/privacy">Privacy policy</a> &middot; <a href="#/admin">Admin sign in</a></p>';
+  $('foot').innerHTML='<p><b>'+esc(C.site.name)+'</b><br>Phone: '+c.phones.map(function(n){return phoneLink(n)}).join(' &middot; ')+'<br>Email: <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a></p><p><a href="#/gallery">Gallery</a> &middot; <a href="#/privacy">Privacy policy</a> &middot; <a href="#/admin">Admin sign in</a></p>';
 }
 function render(){
   applyBrand();drawNav();drawFoot();
@@ -441,11 +457,11 @@ function badge(s){return '<span class="badge '+statusClass(s)+'">'+esc(s)+'</spa
 /* ---------- public views ---------- */
 
 VIEWS.home=function(){
-  return '<section class="hero"><img class="wm" src="'+logoSrc()+'" alt="" aria-hidden="true"><div class="wrap"><div class="hero-in"><div><h1>'+esc(C.site.tagline)+'</h1><p>'+esc(C.site.welcome)+'</p></div>'+heroArt()+'</div>'
+  return '<section class="hero"><img class="wm" src="'+esc(logoSrc())+'" alt="" aria-hidden="true"><div class="wrap"><div class="hero-in"><div><h1>'+esc(C.site.tagline)+'</h1><p>'+esc(C.site.welcome)+'</p></div>'+heroArt()+'</div>'
   +'<div class="acts"><a class="btn primary" href="#/report">Request welfare support</a><a class="btn ghost" href="#/report?issue">Report an issue</a><a class="btn ghost" href="#/track">Track my report</a></div>'
   +'</div></section>'
   +'<section class="blk" style="padding-bottom:0"><div class="wrap"><div class="grid c3"><a class="card act" href="#/report"><h3>Request welfare support</h3><p>Funeral, wedding, naming ceremony, loan or other support.</p></a><a class="card act" href="#/report?issue"><h3>Report an issue</h3><p>Raise a welfare concern or complaint. You can stay anonymous.</p></a><a class="card act" href="#/track"><h3>Track my report</h3><p>See the status of a request with your reference number.</p></a></div></div></section>'
-  +'<section class="blk"><div class="wrap"><div class="urgent" role="note"><strong>Urgent?</strong> For a medical or welfare emergency call <a href="tel:'+esc(C.contact.emergency.replace(/\s/g,''))+'"><b>'+esc(C.contact.emergency)+'</b></a>. Do not wait for an online reply.</div>'
+  +'<section class="blk"><div class="wrap"><div class="urgent" role="note"><strong>Urgent?</strong> For a medical or welfare emergency call '+phoneLink(C.contact.emergency,1)+'. Do not wait for an online reply.</div>'
   +'<h2>What the Welfare Committee does</h2><p>'+esc(C.site.about)+'</p><a class="btn dark" href="#/about">Read how it works</a></div></section>'
   +'<section class="blk" style="padding-top:0"><div class="wrap"><h2>How to get support</h2><ol class="steps">'+C.steps.map(function(x){return '<li><span><b>'+esc(x.h)+'</b> '+esc(x.p)+'</span></li>'}).join('')+'</ol></div></section>'
   +'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Current executives</h2><a href="#/executives">See all</a></div><div class="grid ppl">'+C.executives.slice(0,4).map(person).join('')+'</div></div></section>'
@@ -455,7 +471,7 @@ VIEWS.home=function(){
 };
 function contactBlock(){
   var c=C.contact;
-  return '<p><b>Welfare complaints and requests</b><br>'+c.phones.map(function(n){return '<a href="'+tel(n)+'">'+esc(n)+'</a>'}).join('<br>')+'</p>'
+  return '<p><b>Welfare complaints and requests</b><br>'+c.phones.map(function(n){return phoneLink(n)}).join('<br>')+'</p>'
   +'<div class="urgent" style="margin:0 0 1em"><strong>Emergency line (health emergencies and urgent welfare)</strong><br><a href="'+tel(c.emergency)+'"><b>'+esc(c.emergency)+'</b></a></div>'
   +'<p><b>Email:</b> <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a></p>'
   +(c.office?'<p><b>Office:</b> '+esc(c.office)+'</p>':'')+(c.hours?'<p><b>Office hours:</b> '+esc(c.hours)+'</p>':'')
@@ -522,7 +538,7 @@ VIEWS.report=function(){
   if(!k){state.cat=null;return VIEWS.report()}
   var anon=state.anon&&k.anon;
   var h='<section class="blk"><div class="wrap" style="max-width:640px"><button class="btn ghost small" onclick="backCat()">&lsaquo; Change request type</button><h1 style="margin-top:14px">'+esc(k.label)+'</h1>';
-  if(k.emergency){h+='<div class="urgent" role="alert"><strong>This is an emergency request.</strong><br>Call the Welfare emergency line now: <a href="tel:'+esc(C.contact.emergency.replace(/\s/g,''))+'"><b>'+esc(C.contact.emergency)+'</b></a>.<br>Submitting this form records your request, but the committee cannot promise an immediate reply online.</div>'}
+  if(k.emergency){h+='<div class="urgent" role="alert"><strong>This is an emergency request.</strong><br>Call the Welfare emergency line now: '+phoneLink(C.contact.emergency,1)+'.<br>Submitting this form records your request, but the committee cannot promise an immediate reply online.</div>'}
   h+='<form id="wf" onsubmit="return submitReport(event)" novalidate>';
   if(k.subs.length){h+='<label for="sub">Which applies?</label><select id="sub" required><option value="">Choose one</option>'+k.subs.map(function(s){return '<option'+(state.sub===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select>'}
   if(k.anon){h+='<div class="check"><input type="checkbox" id="anon" '+(state.anon?'checked':'')+' onchange="toggleAnon(this.checked)"><label for="anon" style="margin:0">Report anonymously</label></div>'}
@@ -603,7 +619,7 @@ VIEWS.track=function(){
 function doTrack(e){
   e.preventDefault();
   var ref=$('tr').value.trim().toUpperCase(),p4=$('t4').value.trim();
-  if(LIVE){liveTrack(ref,p4).then(function(r2){if(!r2){$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return}$('terr').textContent='';state.trackRef=ref;state.track4=p4;drawTrack(r2)});return false}
+  if(LIVE){var wt=LOCK.left('track');if(wt){$('terr').textContent='Too many attempts. Try again in '+wt+' minute(s).';return false}liveTrack(ref,p4).then(function(r2){if(!r2){LOCK.fail('track',5,10);$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return}LOCK.ok('track');$('terr').textContent='';state.trackRef=ref;state.track4=p4;drawTrack(r2)});return false}
   var r=REPORTS.filter(function(x){return x.ref===ref})[0];
   var ok=r&&(r.anon||(p4&&r.phone.replace(/\D/g,'').slice(-4)===p4));
   if(!ok){$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return false}
@@ -637,13 +653,50 @@ AFTER.track=function(){if(state.trackRef&&!$('tres').innerHTML){/* require verif
 function liveLoginView(){
   return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Admin sign in</h1><div class="note">For authorised NAMSA Welfare administrators only.</div><form onsubmit="return doLiveLogin(event)"><label for="em2">Email</label><input type="email" id="em2" autocomplete="username" required><label for="pw">Password</label><input type="password" id="pw" autocomplete="current-password" required><p id="lerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Sign in</button></form></div></section>';
 }
+var LOCK={
+  get:function(k){return LS.get('nw_lk_'+k,{n:0,until:0})},
+  fail:function(k,max,mins){var x=LOCK.get(k);x.n++;if(x.n>=max)x.until=Date.now()+mins*60000*Math.min(8,Math.pow(2,Math.floor(x.n/max)-1));LS.set('nw_lk_'+k,x)},
+  left:function(k){var x=LOCK.get(k);return x.until>Date.now()?Math.ceil((x.until-Date.now())/60000):0},
+  ok:function(k){LS.set('nw_lk_'+k,{n:0,until:0})}
+};
+var MFA=null;
 async function doLiveLogin(e){
   e.preventDefault();
-  var b=e.target.querySelector('button');b.disabled=true;
+  var b=e.target.querySelector('button'),le=$('lerr'),w=LOCK.left('login');
+  if(w){le.textContent='Too many attempts. Try again in '+w+' minute(s).';return false}
+  b.disabled=true;
   var r=await sb.auth.signInWithPassword({email:$('em2').value.trim(),password:$('pw').value});
-  if(r.error){$('lerr').textContent='Wrong email or password.';b.disabled=false;return false}
-  var ok=await loadStaff(r.data.user);
-  if(!ok){$('lerr').textContent='This account is not set up as a Welfare admin yet. Ask the Super Administrator.';b.disabled=false;return false}
+  if(r.error){LOCK.fail('login',5,15);le.textContent='Wrong email or password.';b.disabled=false;return false}
+  LOCK.ok('login');
+  if(await mfaGate())return finishLogin();
+  return false;
+}
+async function mfaGate(){
+  var a=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(a.error){await sb.auth.signOut();toast('Could not check two-step sign-in. Try again.');render();return false}
+  if(a.data.currentLevel==='aal2')return true;
+  var f=await sb.auth.mfa.listFactors(),t=f.data&&f.data.totp&&f.data.totp[0];
+  var h='<section class="blk"><div class="wrap" style="max-width:460px"><h1>Two-step verification</h1>';
+  if(t){MFA={id:t.id};h+='<div class="note">Enter the 6-digit code from your authenticator app.</div>'}
+  else{
+    var en=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'NAMSA admin '+Date.now()});
+    if(en.error){await sb.auth.signOut();toast('Could not start two-step setup');render();return false}
+    MFA={id:en.data.id};
+    h+='<div class="note">First sign-in: scan this code with Google Authenticator, Microsoft Authenticator or Authy, then enter the 6-digit code it shows.</div><img alt="Authenticator setup code" src="'+esc(en.data.totp.qr_code)+'" style="width:200px;height:200px;background:#fff;border-radius:12px"><p class="hint">Cannot scan? Enter this key: <b>'+esc(en.data.totp.secret)+'</b></p>';
+  }
+  $('app').innerHTML=h+'<form onsubmit="return doMfa(event)"><label for="mc">6-digit code</label><input type="text" id="mc" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required><p id="merr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Verify</button></form></div></section>';
+  return false;
+}
+async function doMfa(e){
+  e.preventDefault();
+  var w=LOCK.left('mfa');if(w){$('merr').textContent='Too many attempts. Try again in '+w+' minute(s).';return false}
+  var r=await sb.auth.mfa.challengeAndVerify({factorId:MFA.id,code:$('mc').value.replace(/\D/g,'')});
+  if(r.error){LOCK.fail('mfa',5,15);$('merr').textContent='That code did not work. Use the newest code.';return false}
+  LOCK.ok('mfa');return finishLogin();
+}
+async function finishLogin(){
+  var u=await sb.auth.getUser(),ok=u.data&&u.data.user&&await loadStaff(u.data.user);
+  if(!ok){toast('This account is not set up as a Welfare admin yet. Ask the Super Administrator.');render();return false}
   logit(SESSION.name,'Signed in.');state.adminTab=(SESSION.role==='content')?'people':'reports';
   if(SESSION.role!=='content')await loadReports();
   render();return false;
@@ -655,7 +708,7 @@ async function loadStaff(user){
 }
 async function restoreSession(){
   var r=await sb.auth.getSession();
-  if(r.data&&r.data.session){var ok=await loadStaff(r.data.session.user);if(ok&&SESSION.role!=='content')await loadReports()}
+  if(r.data&&r.data.session){var aa=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(!aa.data||aa.data.currentLevel!=='aal2'){await sb.auth.signOut();return}var ok=await loadStaff(r.data.session.user);if(ok&&SESSION.role!=='content')await loadReports()}
 }
 async function loadContent(){
   var r=await sb.from('site_content').select('key,value');
@@ -737,6 +790,7 @@ async function submitLive(k,anon,v,files,raw,btn){
 VIEWS.admin=function(){
   if(!SESSION){
     if(LIVE)return liveLoginView();
+    if(/^https:\/\//.test(SUPABASE_URL))return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Admin sign in unavailable</h1><div class="note">The secure server could not be reached. Check your internet connection and reload the page.</div></div></section>';
     return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Committee sign in</h1><div class="note">Prototype sign in. In the real site this uses each administrator\'s own email, a strong password and a two-step code.</div>'
     +'<form onsubmit="return doLogin(event)"><label for="role">Sign in as</label><select id="role"><option value="super">Super Administrator</option><option value="welfare">Welfare Administrator</option><option value="content">Content Administrator</option></select>'
     +'<label for="pin">Demo PIN</label><input type="password" id="pin" inputmode="numeric" placeholder="Enter PIN"><p id="lerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Sign in</button></form></div></section>';
@@ -756,6 +810,7 @@ VIEWS.admin=function(){
 };
 function doLogin(e){
   e.preventDefault();
+  if(/^https:\/\//.test(SUPABASE_URL))return false;
   if($('pin').value!=='1515'){$('lerr').textContent='Wrong PIN. Try again.';return false}
   SESSION={role:$('role').value,name:ROLES[$('role').value]};
   logit(SESSION.name,'Signed in (demo).');state.adminTab='reports';render();return false;
@@ -793,7 +848,7 @@ ADMIN.reports=function(){
   +'<div><label for="fs" style="margin-top:0">Status</label><select id="fs" onchange="state.filter.status=this.value;render()"><option value="">All</option>'+STATUSES.map(function(s){return '<option'+(f.status===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select></div></div>';
   if(!list.length){return h+'<div class="card"><p style="margin:0">'+(REPORTS.length?'No requests match these filters.':'No requests yet. When a member submits the form, it appears here.')+'</p></div>'}
   h+='<div class="scroll-x"><table><thead><tr><th>Reference</th><th>Name</th><th>Category</th><th>Level</th><th>Date</th><th>Status</th></tr></thead><tbody>'
-  +list.map(function(r){return '<tr class="click" tabindex="0" onclick="openRep(\''+r.ref+'\')" onkeydown="if(event.key===\'Enter\')openRep(\''+r.ref+'\')"><td><b>'+esc(r.ref)+'</b>'+(r.emergency?' <span class="badge bad">Emergency</span>':'')+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.category)+(r.sub?'<br><span class="hint">'+esc(r.sub)+'</span>':'')+'</td><td>'+esc(r.level||'-')+'</td><td>'+esc(fmtDay(r.created))+'</td><td>'+badge(r.status)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  +list.map(function(r){return '<tr class="click" tabindex="0" onclick="openRep(\''+String(r.ref).replace(/[^A-Za-z0-9-]/g,'')+'\')" onkeydown="if(event.key===\'Enter\')openRep(\''+String(r.ref).replace(/[^A-Za-z0-9-]/g,'')+'\')"><td><b>'+esc(r.ref)+'</b>'+(r.emergency?' <span class="badge bad">Emergency</span>':'')+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.category)+(r.sub?'<br><span class="hint">'+esc(r.sub)+'</span>':'')+'</td><td>'+esc(r.level||'-')+'</td><td>'+esc(fmtDay(r.created))+'</td><td>'+badge(r.status)+'</td></tr>'}).join('')+'</tbody></table></div>';
   return h;
 };
 function keepFocus(id){
@@ -807,7 +862,7 @@ function reportDetail(ref){
   if(!can)return '<p>You do not have access to welfare reports.</p>';
   var h='<button class="btn ghost small" onclick="state.openReport=null;render()">&lsaquo; Back to requests</button><h2 style="margin-top:14px">'+esc(r.ref)+'</h2><div class="card"><p>'+badge(r.status)+(r.emergency?' <span class="badge bad">Emergency</span>':'')+'</p>'
   +'<p><b>Category:</b> '+esc(r.category)+(r.sub?' ('+esc(r.sub)+')':'')+'</p><p><b>Submitted:</b> '+esc(fmt(r.created))+'</p>'
-  +(r.anon?'<p><b>Reporter:</b> Anonymous</p>':'<p><b>Name:</b> '+esc(r.name)+'<br><b>ID:</b> '+esc(r.sid)+'<br><b>Phone:</b> '+esc(r.phone)+'<br><b>Email:</b> '+esc(r.email||'Not given')+'<br><b>Programme:</b> '+esc(r.programme)+' &middot; Level '+esc(r.level)+'<br><b>Preferred contact:</b> '+esc(r.contact)+'</p>')
+  +(r.anon?'<p><b>Reporter:</b> Anonymous</p>':'<p><b>Name:</b> '+esc(r.name)+'<br><b>ID:</b> '+esc(r.sid)+'<br><b>Phone:</b> '+phoneLink(r.phone)+'<br><b>Email:</b> '+esc(r.email||'Not given')+'<br><b>Programme:</b> '+esc(r.programme)+' &middot; Level '+esc(r.level)+'<br><b>Preferred contact:</b> '+esc(r.contact)+'</p>')
   +(r.amount?'<p><b>Amount requested:</b> GHS '+esc(r.amount)+'</p>':'')
   +'<p><b>Situation:</b><br>'+esc(r.desc).replace(/\n/g,'<br>')+'</p>'
   +'<p style="margin:0"><b>Attachments:</b> '+(r.files.length?'<span class="flex">'+r.files.map(function(f){return (LIVE&&f.path)?'<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>':esc(f.name)+' ('+Math.round(f.size/1024)+' KB)'}).join('')+'</span>':'None')+'</p></div>';
