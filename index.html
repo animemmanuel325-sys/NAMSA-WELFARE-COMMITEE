@@ -140,6 +140,55 @@ a.act:hover{background:var(--info-bg)}
 @page{margin:16mm}
 @media print{body>*:not(.lt){display:none!important}.lt{position:static;padding:0;background:#fff;overflow:visible}.lt .noprint{display:none!important}.lsheet{box-shadow:none;margin:0;padding:0;max-width:none;border-radius:0}}
 
+
+/* committee redesign */
+.cm{position:relative;overflow:hidden;background:linear-gradient(170deg,var(--surface) 0%,var(--info-bg) 100%);border:1px solid var(--line);border-radius:26px;padding:26px 14px 28px}
+.cm::before,.cm::after{content:"";position:absolute;border-radius:50%;pointer-events:none;filter:blur(40px);opacity:.35}
+.cm::before{width:220px;height:220px;right:-70px;top:-70px;background:var(--green)}
+.cm::after{width:200px;height:200px;left:-70px;bottom:-60px;background:var(--blue)}
+.cm>*{position:relative;z-index:1}
+.cm-tier{display:flex;justify-content:center}
+.cm-link{width:3px;height:26px;margin:0 auto;border-radius:3px;background:linear-gradient(var(--go),var(--brand));opacity:.5;transform-origin:top;animation:cmGrow .6s ease-out both}
+.cm-row{display:flex;justify-content:center;flex-wrap:wrap;gap:14px}
+.cm-card{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:14px 18px 14px 14px;cursor:pointer;box-shadow:0 6px 18px rgba(10,74,166,.09);opacity:0;animation:cmUp .65s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:calc(var(--i,0)*90ms);transition:transform .25s,box-shadow .25s,border-color .25s}
+.cm-card:hover,.cm-card:focus-visible{transform:translateY(-4px);box-shadow:0 14px 30px rgba(10,74,166,.18);border-color:var(--go)}
+.cm-card.xl{width:100%;max-width:480px}
+.cm-card.l{width:100%;max-width:430px}
+.cm-card.m{flex:1 1 250px;max-width:320px}
+.cm-card.s{flex-direction:column;text-align:center;gap:10px;padding:14px 10px 14px}
+.cm-frame{position:relative;flex:none;overflow:hidden;border-radius:22px;padding:3px;background:var(--line);animation:cmFloat 5s ease-in-out infinite alternate;animation-delay:calc(var(--i,0)*350ms)}
+.cm-card.xl .cm-frame::before,.cm-card.l .cm-frame::before{content:"";position:absolute;inset:-80%;background:conic-gradient(var(--green),var(--blue),var(--green));animation:cmSpin 7s linear infinite}
+.cm-card.m .cm-frame,.cm-card.s .cm-frame{background:linear-gradient(135deg,var(--green),var(--blue))}
+.cm-ph{position:relative;aspect-ratio:1/1;border-radius:19px;overflow:hidden;background:var(--info-bg);display:grid;place-items:center;font-family:var(--head);font-weight:800;color:var(--brand)}
+.cm-card.xl .cm-ph{width:124px;font-size:2.2rem}
+.cm-card.l .cm-ph{width:108px;font-size:2rem}
+.cm-card.m .cm-ph{width:84px;font-size:1.6rem}
+.cm-card.s .cm-ph{width:74px;font-size:1.4rem;border-radius:16px}
+.cm-card.s .cm-frame{border-radius:19px}
+.cm-ph img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s}
+.cm-card:hover .cm-ph img{transform:scale(1.1)}
+.cm-tx{min-width:0}
+.cm-role{display:inline-block;font-size:.76rem;font-weight:700;color:var(--go);background:var(--ok-bg);padding:2px 10px;border-radius:99px;line-height:1.5}
+.cm-tx h3{margin:6px 0 2px;font-size:1.05rem;overflow-wrap:anywhere}
+.cm-card.xl .cm-tx h3{font-size:1.3rem}
+.cm-card.l .cm-tx h3{font-size:1.18rem}
+.cm-card.s .cm-tx h3{font-size:.95rem}
+.cm-tx p{margin:0;color:var(--muted);font-size:.88rem}
+.cm-more{display:inline-block;margin-top:4px;font-size:.82rem;font-weight:700;color:var(--brand)}
+.cm-more::after{content:" \2192";display:inline-block;transition:transform .25s}
+.cm-card:hover .cm-more::after{transform:translateX(4px)}
+.cm-members{margin-top:8px}
+.cm-sub{display:flex;align-items:center;gap:12px;margin:26px 0 14px;font-size:1.05rem;color:var(--brand)}
+.cm-sub::before,.cm-sub::after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--line))}
+.cm-sub::after{background:linear-gradient(90deg,var(--line),transparent)}
+.cm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:12px}
+@media(max-width:430px){.cm-card.xl,.cm-card.l{flex-direction:column;text-align:center}}
+@keyframes cmUp{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes cmFloat{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+@keyframes cmSpin{to{transform:rotate(360deg)}}
+@keyframes cmGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){.cm-card{opacity:1!important}.cm-link{transform:none!important}}
+
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:12px 22px;border-radius:14px;border:2px solid transparent;font-weight:700;cursor:pointer;text-decoration:none;text-align:center}
 .btn.primary{background:var(--sun);color:var(--sun-ink)}
@@ -334,6 +383,40 @@ function normCode(v){
   if(o)return 'NAMSA-WEL-'+o[1]+'-'+o[2];
   return raw;
 }
+
+/* ---------- strict 200 KB upload limit ---------- */
+var MAX_BYTES=200*1024;
+function dataBytes(u){return Math.round((u.length-u.indexOf(',')-1)*0.75)}
+function sizeMsg(f){return f.name+' is too large ('+Math.max(1,Math.round(f.size/1024))+' KB). The limit is 200 KB. Please reduce the file to 200 KB or below, then choose it again.'}
+function showSizeError(f){
+  var d=document.createElement('div');d.className='lb pd';d.setAttribute('role','alertdialog');d.setAttribute('aria-label','File too large');
+  d.innerHTML='<div class="pcard" style="max-width:400px;text-align:center"><h2 style="margin:0 0 8px;color:var(--danger)">File too large</h2><p>'+esc(sizeMsg(f))+'</p><button class="btn dark" id="szok" style="width:100%">OK</button></div>';
+  d.addEventListener('click',function(e){if(e.target===d||e.target.id==='szok')d.remove()});
+  document.body.appendChild(d);
+}
+document.addEventListener('change',function(e){
+  var t=e.target;if(!t||t.type!=='file'||!t.files)return;
+  for(var i=0;i<t.files.length;i++){
+    if(t.files[i].size>MAX_BYTES){
+      e.stopImmediatePropagation();e.preventDefault();
+      var bad=t.files[i];try{t.value=''}catch(x){}
+      showSizeError(bad);return;
+    }
+  }
+},true);
+function jpegUnder(cv,q){
+  var u=cv.toDataURL('image/jpeg',q),n=0;
+  while(dataBytes(u)>MAX_BYTES&&n<14){
+    if(q>0.5){q-=0.1}else{var c2=document.createElement('canvas');c2.width=Math.round(cv.width*0.85);c2.height=Math.round(cv.height*0.85);c2.getContext('2d').drawImage(cv,0,0,c2.width,c2.height);cv=c2}
+    u=cv.toDataURL('image/jpeg',q);n++;
+  }
+  return u;
+}
+function pngUnder(cv){
+  var u=pngUnder(cv),n=0;
+  while(dataBytes(u)>MAX_BYTES&&n<8){var c2=document.createElement('canvas');c2.width=Math.round(cv.width*0.8);c2.height=Math.round(cv.height*0.8);c2.getContext('2d').drawImage(cv,0,0,c2.width,c2.height);cv=c2;u=cv.toDataURL('image/png');n++}
+  return u;
+}
 function uid(){return 'i'+Math.random().toString(36).slice(2,9)}
 function fmt(ts){try{return new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
 function fmtDay(ts){try{return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}catch(e){return ''}}
@@ -473,7 +556,7 @@ document.addEventListener('click',bumpIdle);document.addEventListener('keydown',
 
 /* ---------- routing ---------- */
 var NAV=[['home','Home'],['about','About'],['executives','Executives'],['committee','Committee'],['guidelines','Guidelines'],['track','Track My Report'],['contact','Contact']];
-var state={cat:null,sub:'',anon:false,adminTab:'reports',openReport:null,filter:{q:'',cat:'',status:''},done:null,trackRef:null,edit:{}};
+var state={sel:{},cat:null,sub:'',anon:false,adminTab:'reports',openReport:null,filter:{q:'',cat:'',status:''},done:null,trackRef:null,edit:{}};
 function go(r){if(location.hash==='#/'+r){render()}else{location.hash='#/'+r}}
 function route(){return (location.hash.replace('#/','')||'home').split('?')[0]}
 function toggleNav(){var n=$('nav'),b=$('menuBtn');var o=n.classList.toggle('open');b.setAttribute('aria-expanded',o)}
@@ -549,13 +632,19 @@ function contactBlock(){
   +(c.socials&&c.socials.length?'<div class="socials">'+c.socials.map(function(x){return '<a class="btn ghost small" href="'+esc(safeUrl(x.url))+'" target="_blank" rel="noopener">'+esc(x.label)+'</a>'}).join('')+'</div>':'');
 }
 VIEWS.about=function(){return '<section class="blk"><div class="wrap"><h1>About NAMSA Welfare</h1>'+sections(C.aboutSections)+'</div></section>'};
+function cmCard(p,kind,i){
+  var ini=(p.name||'?').replace('Name to be added','?').trim().split(/\s+/).map(function(w){return w[0]}).slice(0,2).join('').toUpperCase()||'?';
+  return '<article class="cm-card '+kind+'" style="--i:'+i+'" tabindex="0" role="button" aria-label="View profile of '+esc(p.name)+'" onclick="openPerson(\''+p.id+'\')" onkeydown="if(event.key===\'Enter\')openPerson(\''+p.id+'\')">'
+   +'<div class="cm-frame"><div class="cm-ph">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="Photo of '+esc(p.name)+'">':'<span aria-hidden="true">'+esc(ini)+'</span>')+'</div></div>'
+   +'<div class="cm-tx"><span class="cm-role">'+esc(p.position)+'</span><h3>'+esc(p.name)+'</h3>'+(p.desc?'<p>'+esc(p.desc)+'</p>':'')+'<span class="cm-more">View profile</span></div></article>';
+}
 function committeeBlock(){
-  var L=C.committee||[],M=C.members||[],h='';
-  if(L[0])h+='<div class="tier xl">'+person(L[0])+'</div>';
-  if(L[1])h+='<div class="tier l">'+person(L[1])+'</div>';
-  if(L.length>2)h+='<div class="tier m">'+L.slice(2).map(function(x){return person(x)}).join('')+'</div>';
-  if(M.length)h+='<h3 style="margin-top:22px">Welfare Members</h3><div class="grid ppl">'+M.map(function(x){return person(x)}).join('')+'</div>';
-  return h;
+  var L=C.committee||[],M=C.members||[],h='<div class="cm">';
+  if(L[0])h+='<div class="cm-tier">'+cmCard(L[0],'xl',0)+'</div>';
+  if(L[1])h+='<div class="cm-link" aria-hidden="true"></div><div class="cm-tier">'+cmCard(L[1],'l',1)+'</div>';
+  if(L.length>2)h+='<div class="cm-link" aria-hidden="true"></div><div class="cm-row">'+L.slice(2).map(function(x,i){return cmCard(x,'m',i+2)}).join('')+'</div>';
+  if(M.length)h+='<div class="cm-members"><h3 class="cm-sub">Welfare Members</h3><div class="cm-grid">'+M.map(function(x,i){return cmCard(x,'s',i)}).join('')+'</div></div>';
+  return h+'</div>';
 }
 VIEWS.executives=function(){return '<section class="blk"><div class="wrap"><h1>NAMSA Executives</h1><div class="grid ppl">'+C.executives.map(person).join('')+'</div></div></section>'};
 VIEWS.committee=function(){return '<section class="blk"><div class="wrap"><h1>Welfare Committee</h1>'+committeeBlock()+'</div></section>'};
@@ -663,7 +752,7 @@ function submitReport(e){
   var files=[],raw=[];
   var fl=$('fl');
   if(fl&&fl.files){for(var i=0;i<fl.files.length;i++){var f=fl.files[i];
-    if(f.size>200*1024){err.push(f.name+' is larger than 200 KB. Please compress it and try again.')}
+    if(f.size>MAX_BYTES){err.push(sizeMsg(f))}
     else if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){err.push(f.name+' is not a PDF, JPG or PNG.')}
     else{files.push({name:f.name,size:f.size});raw.push(f)}}}
   if(err.length){var el=$('ferr');el.innerHTML=err.map(esc).join('<br>');el.scrollIntoView({block:'center'});return false}
@@ -718,7 +807,7 @@ function validFiles(input,max){
   var out=[],err='',list=(input&&input.files)?input.files:[];
   if(list.length>max)return {err:'You can attach up to '+max+' files at a time.',files:[]};
   for(var i=0;i<list.length;i++){var f=list[i];
-    if(f.size>200*1024){err=f.name+' is larger than 200 KB. Please compress it and try again.';break}
+    if(f.size>MAX_BYTES){err=sizeMsg(f);break}
     if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){err=f.name+' is not a PDF, JPG or PNG.';break}
     out.push(f)}
   return {err:err,files:out};
@@ -904,6 +993,7 @@ async function submitLive(k,anon,v,files,raw,btn){
   try{
     var folder='u'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
     for(var i=0;i<raw.length;i++){
+      if(raw[i].size>MAX_BYTES)throw new Error(sizeMsg(raw[i]));
       var safe=raw[i].name.replace(/[^A-Za-z0-9._-]/g,'_');
       var path=folder+'/'+i+'_'+safe;
       var up=await sb.storage.from('attachments').upload(path,raw[i],{contentType:raw[i].type||'application/octet-stream'});
@@ -980,12 +1070,13 @@ ADMIN.reports=function(){
     if(f.status&&r.status!==f.status)return false;
     return true;
   });
-  var h='<div class="flex spread" style="margin-bottom:10px"><span class="hint">'+REPORTS.length+' request(s)</span><span class="flex">'+(LIVE?'<button class="btn ghost small" onclick="refreshReports()">Refresh</button>':'')+'<button class="btn ghost small" onclick="exportCSV()">Download spreadsheet</button></span></div><div class="grid c3" style="margin-bottom:14px"><div><label for="fq" style="margin-top:0">Search</label><input type="text" id="fq" value="'+esc(f.q)+'" placeholder="Reference, name, programme, level" oninput="state.filter.q=this.value;keepFocus(\'fq\')"></div>'
+  var isSuper=!!SESSION&&SESSION.role==='super';var nSel=Object.keys(state.sel).length;
+  var h='<div class="flex spread" style="margin-bottom:10px"><span class="hint">'+REPORTS.length+' request(s)</span><span class="flex">'+(LIVE?'<button class="btn ghost small" onclick="refreshReports()">Refresh</button>':'')+'<button class="btn ghost small" onclick="exportCSV()">Download spreadsheet</button>'+(isSuper?'<button class="btn ghost small" onclick="selFinished()">Select finished</button><button class="btn danger small" onclick="deleteSelected()">Delete selected ('+nSel+')</button>':'')+'</span></div><div class="grid c3" style="margin-bottom:14px"><div><label for="fq" style="margin-top:0">Search</label><input type="text" id="fq" value="'+esc(f.q)+'" placeholder="Reference, name, programme, level" oninput="state.filter.q=this.value;keepFocus(\'fq\')"></div>'
   +'<div><label for="fc" style="margin-top:0">Category</label><select id="fc" onchange="state.filter.cat=this.value;render()"><option value="">All</option>'+C.categories.map(function(k){return '<option'+(f.cat===k.label?' selected':'')+'>'+esc(k.label)+'</option>'}).join('')+'</select></div>'
   +'<div><label for="fs" style="margin-top:0">Status</label><select id="fs" onchange="state.filter.status=this.value;render()"><option value="">All</option>'+STATUSES.map(function(s){return '<option'+(f.status===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select></div></div>';
   if(!list.length){return h+'<div class="card"><p style="margin:0">'+(REPORTS.length?'No requests match these filters.':'No requests yet. When a member submits the form, it appears here.')+'</p></div>'}
-  h+='<div class="scroll-x"><table><thead><tr><th>Reference</th><th>Name</th><th>Category</th><th>Level</th><th>Date</th><th>Status</th></tr></thead><tbody>'
-  +list.map(function(r){return '<tr class="click" tabindex="0" onclick="openRep(\''+r.ref+'\')" onkeydown="if(event.key===\'Enter\')openRep(\''+r.ref+'\')"><td><b>'+esc(r.ref)+'</b>'+(r.emergency?' <span class="badge bad">Emergency</span>':'')+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.category)+(r.sub?'<br><span class="hint">'+esc(r.sub)+'</span>':'')+'</td><td>'+esc(r.level||'-')+'</td><td>'+esc(fmtDay(r.created))+'</td><td>'+badge(r.status)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  h+='<div class="scroll-x"><table><thead><tr>'+(isSuper?'<th style="width:44px"><input type="checkbox" aria-label="Select all shown" onclick="selAll(this.checked)"></th>':'')+'<th>Reference</th><th>Name</th><th>Category</th><th>Level</th><th>Date</th><th>Status</th></tr></thead><tbody>'
+  +list.map(function(r){return '<tr class="click" tabindex="0" onclick="openRep(\''+r.ref+'\')" onkeydown="if(event.key===\'Enter\')openRep(\''+r.ref+'\')">'+(isSuper?'<td onclick="event.stopPropagation()"><input type="checkbox" aria-label="Select request" '+(state.sel[r.ref]?'checked ':'')+'onclick="event.stopPropagation()" onchange="selOne(\''+r.ref+'\',this.checked)"></td>':'')+'<td><b>'+esc(r.ref)+'</b>'+(r.emergency?' <span class="badge bad">Emergency</span>':'')+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.category)+(r.sub?'<br><span class="hint">'+esc(r.sub)+'</span>':'')+'</td><td>'+esc(r.level||'-')+'</td><td>'+esc(fmtDay(r.created))+'</td><td>'+badge(r.status)+'</td></tr>'}).join('')+'</tbody></table></div>';
   return h;
 };
 function keepFocus(id){
@@ -1010,6 +1101,7 @@ function reportDetail(ref){
   h+='<h3 style="margin-top:22px">Internal notes <span class="hint">(never shown to the member)</span></h3>'+(r.notes.length?r.notes.map(function(n){return '<div class="msg" style="background:#fff1cc;color:#4a3300"><small>'+esc(n.by)+' &middot; '+esc(fmt(n.t))+'</small><br>'+esc(n.text)+'</div>'}).join(''):'<p class="hint">No notes.</p>')
   +'<label for="nt">Add a note</label><textarea id="nt"></textarea><button class="btn ghost small" style="margin-top:10px" onclick="addNote(\''+r.ref+'\')">Save note</button>';
   h+='<h3 style="margin-top:22px">Status history</h3><ul class="timeline">'+r.history.map(function(x){return '<li><b>'+esc(x.status)+'</b> by '+esc(x.by)+'<br><span class="hint">'+esc(fmt(x.t))+'</span></li>'}).join('')+'</ul>';
+  if(SESSION.role==='super'){h+='<h3 style="margin-top:26px;color:var(--danger)">Remove this request</h3><p class="hint">Only the Super Administrator can do this. It permanently deletes the request, its messages and its attached files. Download the spreadsheet first if you need a copy.</p><button class="btn danger small" onclick="deleteReports([\''+r.ref+'\'])">Delete this request</button>'}
   return h;
 }
 
@@ -1088,6 +1180,43 @@ function downloadLetterDoc(){
   var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Letter</title></head><body style="font-family:\'Times New Roman\',serif;font-size:12pt">'+letterSheet(true)+'</body></html>';
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+html],{type:'application/msword'}));a.download='NAMSA-Welfare-Letter-'+safeName(l.ref)+'.doc';document.body.appendChild(a);a.click();a.remove();
 }
+
+/* ---------- delete requests (Super Administrator only) ---------- */
+var FINISHED=['Approved','Partially Approved','Declined','Resolved','Closed'];
+function selOne(ref,on){if(on)state.sel[ref]=1;else delete state.sel[ref];var b=document.querySelector('.btn.danger.small');render()}
+function selAll(on){
+  state.sel={};
+  if(on){var f=state.filter,q=f.q.toLowerCase();REPORTS.forEach(function(r){
+    if(q&&[r.ref,r.name,r.programme,r.level,r.category].join(' ').toLowerCase().indexOf(q)<0)return;
+    if(f.cat&&r.category!==f.cat)return;if(f.status&&r.status!==f.status)return;state.sel[r.ref]=1})}
+  render();
+}
+function selFinished(){state.sel={};REPORTS.forEach(function(r){if(FINISHED.indexOf(r.status)>-1)state.sel[r.ref]=1});var n=Object.keys(state.sel).length;toast(n?n+' finished request(s) selected':'No finished requests found');render()}
+function deleteSelected(){var refs=Object.keys(state.sel).filter(function(r){return getR(r)});if(!refs.length){toast('Tick the requests you want to delete first');return}deleteReports(refs)}
+async function deleteReports(refs){
+  if(!SESSION||SESSION.role!=='super'){toast('Only the Super Administrator can delete requests.');return}
+  var list=refs.map(getR).filter(Boolean);if(!list.length)return;
+  var open=list.filter(function(r){return FINISHED.indexOf(r.status)<0}).length;
+  var msg='Permanently delete '+list.length+' request'+(list.length>1?'s':'')+'? This also removes their messages and attached files and cannot be undone.\n\nTip: tap Download spreadsheet first if you need a copy.'+(open?'\n\nWARNING: '+open+' of these '+(open>1?'are':'is')+' not finished yet (not Approved, Declined, Resolved or Closed).':'');
+  if(!confirm(msg))return;
+  var done=0;
+  for(var i=0;i<list.length;i++){
+    var r=list[i];
+    if(LIVE){
+      var att=[],docs=[];
+      (r.files||[]).forEach(function(f){if(f.path)att.push(f.path)});
+      (r.messages||[]).forEach(function(m){(m.files||[]).forEach(function(f){if(f.path){(m.from==='Committee'?docs:att).push(f.path)}})});
+      try{if(att.length)await sb.storage.from('attachments').remove(att);if(docs.length)await sb.storage.from('member-docs').remove(docs)}catch(e){}
+      var d=await sb.from('reports').delete().eq('id',r.id).select('id');
+      if(d.error||!d.data||!d.data.length){toast('Could not delete '+r.ref+(d.error?': '+d.error.message:'. You may not have permission.'));continue}
+    }
+    REPORTS=REPORTS.filter(function(x){return x.ref!==r.ref});delete state.sel[r.ref];done++;
+    logit(SESSION.name,'Deleted request '+r.ref+'.');
+  }
+  if(!LIVE)saveR();
+  state.openReport=null;
+  toast(done+' request'+(done===1?'':'s')+' deleted');render();
+}
 function getR(ref){return REPORTS.filter(function(x){return x.ref===ref})[0]}
 function setStatus(ref){
   var r=getR(ref),s=$('ns').value;if(!r||s===r.status)return;
@@ -1126,12 +1255,12 @@ function peopleEditor(key,title){
   var h='<h2>'+esc(title)+'</h2><p class="hint">Changes appear on the public site straight away.</p>';
   h+=list.map(function(p,i){
     return '<div class="edit-item"><div class="flex"><div class="thumb">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'<span>'+esc((p.name||'?')[0])+'</span>')+'</div>'
-    +'<div><label style="margin:0" class="btn ghost small" for="ph_'+key+i+'">Change photo</label><input type="file" accept="image/*" id="ph_'+key+i+'" class="sr" onchange="setPhoto(\''+key+'\','+i+',this)">'+(p.photo?' <button class="btn ghost small" onclick="rmPhoto(\''+key+'\','+i+')">Remove photo</button>':'')+'</div></div>'
+    +'<div><label style="margin:0" class="btn ghost small" for="ph_'+key+i+'">Change photo (max 200 KB)</label><input type="file" accept="image/*" id="ph_'+key+i+'" class="sr" onchange="setPhoto(\''+key+'\','+i+',this)">'+(p.photo?' <button class="btn ghost small" onclick="rmPhoto(\''+key+'\','+i+')">Remove photo</button>':'')+'</div></div>'
     +'<label for="n_'+key+i+'">Full name</label><input type="text" id="n_'+key+i+'" value="'+esc(p.name)+'" onchange="setP(\''+key+'\','+i+',\'name\',this.value)">'
     +'<label for="p_'+key+i+'">Position</label><input type="text" id="p_'+key+i+'" value="'+esc(p.position)+'" onchange="setP(\''+key+'\','+i+',\'position\',this.value)">'
     +'<label for="d_'+key+i+'">Short description or contact <span class="hint">(optional)</span></label><input type="text" id="d_'+key+i+'" value="'+esc(p.desc)+'" onchange="setP(\''+key+'\','+i+',\'desc\',this.value)">'
     +'<label for="pf_'+key+i+'">Portfolio <span class="hint">(role, responsibilities, message. Shown when someone taps the profile)</span></label><textarea id="pf_'+key+i+'" style="min-height:140px" onchange="setP(\''+key+'\','+i+',\'portfolio\',this.value)">'+esc(p.portfolio||'')+'</textarea>'
-    +'<label style="margin-bottom:8px">More pictures</label><div class="flex">'+(p.pics||[]).map(function(src,j){return '<div style="position:relative"><div class="thumb"><img src="'+esc(src)+'" alt=""></div><button class="btn danger small" style="position:absolute;right:-6px;top:-6px;min-height:28px;padding:2px 9px" aria-label="Remove picture" onclick="rmPic(\''+key+'\','+i+','+j+')">x</button></div>'}).join('')+'<label class="btn ghost small" for="mp_'+key+i+'" style="margin:0">Add pictures</label><input type="file" accept="image/*" multiple id="mp_'+key+i+'" class="sr" onchange="addPics(\''+key+'\','+i+',this)"></div>'
+    +'<label style="margin-bottom:8px">More pictures</label><div class="flex">'+(p.pics||[]).map(function(src,j){return '<div style="position:relative"><div class="thumb"><img src="'+esc(src)+'" alt=""></div><button class="btn danger small" style="position:absolute;right:-6px;top:-6px;min-height:28px;padding:2px 9px" aria-label="Remove picture" onclick="rmPic(\''+key+'\','+i+','+j+')">x</button></div>'}).join('')+'<label class="btn ghost small" for="mp_'+key+i+'" style="margin:0">Add pictures (max 200 KB each)</label><input type="file" accept="image/*" multiple id="mp_'+key+i+'" class="sr" onchange="addPics(\''+key+'\','+i+',this)"></div>'
     +'<div class="flex" style="margin-top:12px"><button class="btn ghost small" onclick="moveP(\''+key+'\','+i+',-1)">Move up</button><button class="btn ghost small" onclick="moveP(\''+key+'\','+i+',1)">Move down</button><button class="btn danger small" onclick="delP(\''+key+'\','+i+')">Remove</button></div></div>';
   }).join('');
   h+='<div class="flex"><button class="btn dark small" onclick="addP(\''+key+'\')">Add a person</button><button class="btn ghost small" onclick="archiveP(\''+key+'\')">Archive this list</button></div>';
@@ -1148,7 +1277,7 @@ function addPics(k,i,input){
     var rd=new FileReader();
     rd.onload=function(){var img=new Image();img.onload=function(){
       var m=Math.min(1,560/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*m);cv.height=Math.round(img.height*m);
-      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);storeImg(cv.toDataURL('image/jpeg',.75)).then(res);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);storeImg(jpegUnder(cv,.75)).then(res);
     };img.onerror=function(){res(null)};img.src=rd.result};
     rd.onerror=function(){res(null)};rd.readAsDataURL(f);
   })})).then(function(list){
@@ -1167,7 +1296,7 @@ function setPhoto(k,i,input){
     var m=Math.min(img.width,img.height),sx=(img.width-m)/2,sy=(img.height-m)/2;
     cv.getContext('2d').drawImage(img,sx,sy,m,m,0,0,s,s);
     toast('Uploading...');
-    storeImg(cv.toDataURL('image/jpeg',.82)).then(function(u){if(!u)return;C[k][i].photo=u;saveC();logit(SESSION.name,'Changed a photo in '+k+'.');render()});
+    storeImg(jpegUnder(cv,.85)).then(function(u){if(!u)return;C[k][i].photo=u;saveC();logit(SESSION.name,'Changed a photo in '+k+'.');render()});
   };img.onerror=function(){toast('That image could not be read')};img.src=rd.result};
   rd.readAsDataURL(f);
 }
@@ -1205,7 +1334,7 @@ ADMIN.pages=function(){
 
 ADMIN.appearance=function(){
   var t=C.theme;
-  return '<h2>Logo</h2><div class="edit-item"><div class="flex"><img class="logo-img" src="'+esc(logoSrc())+'" alt="Current logo" style="width:72px;height:72px"><div class="flex"><label class="btn dark small" for="lg" style="margin:0">Upload new logo</label><input type="file" id="lg" class="sr" accept="image/*" onchange="setLogo(this)"><button class="btn ghost small" onclick="C.logo=\'\';saveC();logit(SESSION.name,\'Reset the logo.\');render()">Use original logo</button></div></div><p class="hint" style="margin:10px 0 0">The logo shows in the header and as a faint background on every page.</p></div>'
+  return '<h2>Logo</h2><div class="edit-item"><div class="flex"><img class="logo-img" src="'+esc(logoSrc())+'" alt="Current logo" style="width:72px;height:72px"><div class="flex"><label class="btn dark small" for="lg" style="margin:0">Upload new logo (max 200 KB)</label><input type="file" id="lg" class="sr" accept="image/*" onchange="setLogo(this)"><button class="btn ghost small" onclick="C.logo=\'\';saveC();logit(SESSION.name,\'Reset the logo.\');render()">Use original logo</button></div></div><p class="hint" style="margin:10px 0 0">The logo shows in the header and as a faint background on every page.</p></div>'
   +'<h2 style="margin-top:26px">Colours</h2><div class="edit-item"><div class="row two"><div><label for="cb" style="margin-top:0">Blue</label><input type="color" id="cb" value="'+esc(t.blue)+'" style="width:100%;height:50px;border:2px solid var(--line);border-radius:12px;background:var(--surface)" onchange="C.theme.blue=this.value;saveC();applyBrand();logit(SESSION.name,\'Changed the blue colour.\');toast(\'Saved\')"></div><div><label for="cg" style="margin-top:0">Green</label><input type="color" id="cg" value="'+esc(t.green)+'" style="width:100%;height:50px;border:2px solid var(--line);border-radius:12px;background:var(--surface)" onchange="C.theme.green=this.value;saveC();applyBrand();logit(SESSION.name,\'Changed the green colour.\');toast(\'Saved\')"></div></div><button class="btn ghost small" style="margin-top:12px" onclick="C.theme={blue:\'#0a4aa6\',green:\'#0f8a43\'};saveC();applyBrand();render()">Reset to white, green and blue</button><p class="hint" style="margin:10px 0 0">On phones set to dark mode, lighter tints of these colours are used automatically.</p></div>';
 };
 function setLogo(input){
@@ -1219,7 +1348,7 @@ function setLogo(input){
   rd.readAsDataURL(f);
 }
 ADMIN.gallery=function(){
-  var h='<h2>Pictures</h2><p class="hint">Add pictures of events and activities. They show small on the Gallery page and the home page. Tap a picture to enlarge it.</p><label class="btn dark small" for="gu" style="margin:0 0 14px">Add pictures</label><input type="file" id="gu" class="sr" accept="image/*" multiple onchange="addGallery(this)">';
+  var h='<h2>Pictures</h2><p class="hint">Add pictures of events and activities. They show small on the Gallery page and the home page. Tap a picture to enlarge it.</p><label class="btn dark small" for="gu" style="margin:0 0 14px">Add pictures (max 200 KB each)</label><input type="file" id="gu" class="sr" accept="image/*" multiple onchange="addGallery(this)">';
   if(!C.gallery.length)return h+'<div class="card"><p style="margin:0">No pictures yet. Tap "Add pictures" to choose from your phone.</p></div>';
   return h+C.gallery.map(function(g,i){
     return '<div class="edit-item"><div class="flex"><div class="thumb"><img src="'+esc(g.photo)+'" alt=""></div><div style="flex:1;min-width:180px"><label style="margin:0" for="gc'+i+'">Caption</label><input type="text" id="gc'+i+'" value="'+esc(g.caption)+'" onchange="C.gallery['+i+'].caption=this.value;saveC();toast(\'Saved\')"></div></div><div class="flex" style="margin-top:12px"><button class="btn ghost small" onclick="moveG('+i+',-1)">Move up</button><button class="btn ghost small" onclick="moveG('+i+',1)">Move down</button><button class="btn danger small" onclick="delG('+i+')">Remove</button></div></div>';
@@ -1232,7 +1361,7 @@ function addGallery(input){
     var rd=new FileReader();
     rd.onload=function(){var img=new Image();img.onload=function(){
       var k=Math.min(1,560/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
-      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);storeImg(cv.toDataURL('image/jpeg',.75)).then(res);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);storeImg(jpegUnder(cv,.75)).then(res);
     };img.onerror=function(){res(null)};img.src=rd.result};
     rd.onerror=function(){res(null)};rd.readAsDataURL(f);
   })})).then(function(list){
