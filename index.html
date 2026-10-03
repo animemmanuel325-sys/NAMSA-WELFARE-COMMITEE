@@ -2,10 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://czuelcaucmzgaosgufyq.supabase.co; connect-src https://czuelcaucmzgaosgufyq.supabase.co wss://czuelcaucmzgaosgufyq.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'">
 <meta name="referrer" content="no-referrer">
-<script>if(window.top!==window.self){try{window.top.location=window.self.location}catch(e){document.documentElement.style.display='none'}}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pentecost University Nursing and Midwifery Student Association (NAMSA) - Welfare</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -135,6 +133,13 @@ a.act:hover{background:var(--info-bg)}
 @keyframes blink{50%{opacity:.25}}
 @keyframes rise2{0%{transform:scaleY(.6)}100%{transform:scaleY(1)}}
 
+
+.lt{position:fixed;inset:0;z-index:90;background:var(--bg);overflow:auto;padding:14px 14px 40px}
+.lsheet{background:#fff;color:#000;max-width:794px;margin:14px auto;padding:34px 38px;font-family:'Times New Roman',Georgia,serif;font-size:12pt;line-height:1.45;box-shadow:0 4px 24px rgba(0,0,0,.18);border-radius:4px}
+.lsheet *{color:#000}
+@page{margin:16mm}
+@media print{body>*:not(.lt){display:none!important}.lt{position:static;padding:0;background:#fff;overflow:visible}.lt .noprint{display:none!important}.lsheet{box-shadow:none;margin:0;padding:0;max-width:none;border-radius:0}}
+
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:12px 22px;border-radius:14px;border:2px solid transparent;font-weight:700;cursor:pointer;text-decoration:none;text-align:center}
 .btn.primary{background:var(--sun);color:var(--sun-ink)}
@@ -166,8 +171,18 @@ section.blk{padding:38px 0}
 .pd .pcard{background:var(--surface);color:var(--ink);border-radius:18px;padding:20px;max-width:560px;width:100%;max-height:88vh;overflow:auto;text-align:left}
 .pd .ph2{width:84px;height:84px;border-radius:50%;overflow:hidden;background:var(--info-bg);border:3px solid var(--go);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:1.6rem;color:var(--brand);flex:none}
 .pd .ph2 img{width:100%;height:100%;object-fit:cover}
-.person .ph{width:76px;height:76px;margin:16px auto 0;border-radius:50%;background:var(--info-bg);display:grid;place-items:center;font-family:var(--head);font-size:1.5rem;font-weight:800;color:var(--brand);overflow:hidden;border:3px solid var(--sun)}
+.person .ph{width:100%;aspect-ratio:1/1;background:var(--info-bg);display:grid;place-items:center;font-family:var(--head);font-size:2.4rem;font-weight:800;color:var(--brand);overflow:hidden}
 .person .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.tier{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-bottom:14px}
+.tier .person{width:100%}
+.tier.xl .person{max-width:380px}
+.tier.xl .person .nm{font-size:1.4rem}
+.tier.xl .person .pos{font-size:1rem}
+.tier.l .person{max-width:300px}
+.tier.l .person .nm{font-size:1.2rem}
+.tier.m .person{max-width:200px;width:calc(50% - 7px)}
+.pd .bigph{width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;background:var(--info-bg);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:3rem;color:var(--brand);cursor:zoom-in;margin-bottom:12px}
+.pd .bigph img{width:100%;height:100%;object-fit:cover}
 .person .tx{padding:10px 10px 16px;text-align:center}
 .person .pos{color:var(--go);font-weight:700;margin:0 0 2px;font-size:.88rem}
 .person .nm{margin:0 0 4px;font-size:1rem}
@@ -261,7 +276,8 @@ footer.foot a{color:var(--brand)}
 <main id="app" tabindex="-1"></main>
 <footer class="foot"><div class="wrap" id="foot"></div></footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script>if(!window.supabase){document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"><\/script>')}</script>
 <script>
 /* ---------- storage helpers (every call guarded) ---------- */
 /* ===== CONNECT TO SUPABASE: paste your two values here ===== */
@@ -271,6 +287,8 @@ var SUPABASE_ANON_KEY='sb_publishable_wTtiQl8Sd1dIcBMuNnFZbw_EGPaSRja';
 var sb=null;
 try{if(/^https:\/\//.test(SUPABASE_URL)&&window.supabase){sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}})}}catch(e){sb=null}
 var LIVE=!!sb;
+var DEMO=!/^https:\/\//.test(SUPABASE_URL);   /* demo mode only when no database address is set */
+var CONFIG_ERR=!DEMO&&!LIVE;                  /* address set but the connection library did not load */
 var VIEWS={}, AFTER={};
 var LS={
   get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
@@ -279,18 +297,22 @@ var LS={
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function $(id){return document.getElementById(id)}
 function toast(t){var d=document.createElement('div');d.className='toast';d.setAttribute('role','status');d.textContent=t;document.body.appendChild(d);setTimeout(function(){d.remove()},3200)}
-function waNum(n){var d=String(n).replace(/\D/g,'');if(d.indexOf('00')===0)d=d.slice(2);else if(d.charAt(0)==='0')d='233'+d.slice(1);return d}
-function tel(n){return 'tel:+'+waNum(n)}
-function phoneLink(n,bold){var t=esc(n);return '<a class="plink" href="'+esc(tel(n))+'" data-n="'+esc(n)+'" onclick="return phoneMenu(this,event)">'+(bold?'<b>'+t+'</b>':t)+'</a>'}
-function phoneMenu(el,ev){
-  if(ev)ev.preventDefault();
-  var n=el.getAttribute('data-n'),old=$('pm');if(old)old.remove();
-  var d=document.createElement('div');d.id='pm';d.className='lb';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-label','Contact '+n);
-  d.innerHTML='<div class="card" style="max-width:340px;width:100%;color:var(--ink);text-align:left"><h3 style="margin-top:0">'+esc(n)+'</h3><p>How would you like to reach us?</p><a class="btn dark" style="width:100%;margin-bottom:10px" href="'+esc(tel(n))+'">Phone call</a><a class="btn primary" style="width:100%;margin-bottom:10px" href="https://wa.me/'+waNum(n)+'" target="_blank" rel="noopener noreferrer">WhatsApp</a><button class="btn ghost" style="width:100%" type="button" id="pmx">Cancel</button></div>';
-  d.addEventListener('click',function(e){if(e.target===d||e.target.id==='pmx'||e.target.tagName==='A')setTimeout(function(){d.remove()},0)});
-  document.body.appendChild(d);
-  document.addEventListener('keydown',function k(e){if(e.key==='Escape'){d.remove();document.removeEventListener('keydown',k)}});
-  var f=d.querySelector('a');if(f)f.focus();
+function tel(n){return 'tel:'+String(n).replace(/[^0-9+]/g,'')}
+
+function waNum(n){var d=String(n).replace(/\D/g,'');if(d.indexOf('00')===0)d=d.slice(2);if(d.charAt(0)==='0')d='233'+d.slice(1);return d}
+function phoneLink(n,inner){return '<a href="'+tel(n)+'" data-n="'+esc(n)+'" onclick="return pickContact(this)">'+(inner==null?esc(n):inner)+'</a>'}
+function safeUrl(u){u=String(u||'').trim();return /^https?:\/\//i.test(u)?u:'#'}
+function pickContact(a){
+  var n=a.getAttribute('data-n'),w=waNum(n);
+  var d=document.createElement('div');d.className='lb pd';d.setAttribute('role','dialog');d.setAttribute('aria-label','Contact '+n);
+  d.innerHTML='<div class="pcard" style="max-width:380px;text-align:center"><h2 style="margin:0 0 4px">'+esc(n)+'</h2><p class="hint" style="margin:0 auto 14px">How do you want to reach us?</p>'
+   +'<a class="btn primary" style="width:100%;margin-bottom:10px" href="tel:+'+w+'">Phone call</a>'
+   +'<a class="btn dark" style="width:100%;margin-bottom:10px" href="https://wa.me/'+w+'?text='+encodeURIComponent('Hello NAMSA Welfare, ')+'" target="_blank" rel="noopener noreferrer">WhatsApp</a>'
+   +'<button class="btn ghost" id="pcx" style="width:100%">Cancel</button></div>';
+  function close(){d.remove();document.removeEventListener('keydown',k)}
+  function k(e){if(e.key==='Escape')close()}
+  d.addEventListener('click',function(e){if(e.target===d||e.target.id==='pcx')close();else if(e.target.tagName==='A')setTimeout(close,400)});
+  document.addEventListener('keydown',k);document.body.appendChild(d);
   return false;
 }
 function uid(){return 'i'+Math.random().toString(36).slice(2,9)}
@@ -316,11 +338,18 @@ var DEFAULTS={
     {id:'e6',name:'Name to be added',position:'PRO',desc:'',photo:''},
     {id:'e7',name:'Name to be added',position:'Organizer',desc:'',photo:''}
   ],
+  letter:{to:'The Financial Controller, NAMSA',cc:'The General Secretary, NAMSA; The President, NAMSA',head:'Emmanuel Anim',sec:''},
+  committeeV:2,
   committee:[
-    {id:'c1',name:'Name to be added',position:'Welfare Chairperson',desc:'',photo:''},
-    {id:'c2',name:'Name to be added',position:'Welfare Secretary',desc:'',photo:''},
-    {id:'c3',name:'Name to be added',position:'Member',desc:'',photo:''},
-    {id:'c4',name:'Name to be added',position:'Member',desc:'',photo:''}
+    {id:'c1',name:'Name to be added',position:'Welfare Chairperson',desc:'',photo:'',portfolio:'',pics:[]},
+    {id:'c2',name:'Name to be added',position:'Welfare Committee Head',desc:'',photo:'',portfolio:'',pics:[]},
+    {id:'c3',name:'Name to be added',position:'Welfare Secretary',desc:'',photo:'',portfolio:'',pics:[]},
+    {id:'c4',name:'Name to be added',position:'Welfare Treasurer',desc:'',photo:'',portfolio:'',pics:[]}
+  ],
+  members:[
+    {id:'m1',name:'Name to be added',position:'Welfare Member',desc:'',photo:'',portfolio:'',pics:[]},
+    {id:'m2',name:'Name to be added',position:'Welfare Member',desc:'',photo:'',portfolio:'',pics:[]},
+    {id:'m3',name:'Name to be added',position:'Welfare Member',desc:'',photo:'',portfolio:'',pics:[]}
   ],
   aboutSections:[
     {h:'Purpose',p:'To care for the wellbeing of NAMSA members by giving practical, financial and moral support in line with the Welfare Constitution and Standing Orders.'},
@@ -375,6 +404,23 @@ if(C.site&&(C.site.name==='NAMSA PU Welfare'||!C.site.name)){C.site.name='Pentec
 if(!C.contact||!C.contact.phones){C.contact=clone(DEFAULTS.contact)}
 if(C.notify&&C.notify.alertEmail==='welfare@example.com'){C.notify.alertEmail='namsapu359@gmail.com'}
 if(!LIVE&&!LS.get('nw_gal_cleared',false)){C.gallery=[];LS.set('nw_content',C);LS.set('nw_gal_cleared',true)}
+
+function migrateCommittee(){
+  if(C.committeeV===2&&C.members)return;
+  var old=C.committee||[],defs=clone(DEFAULTS.committee),mem=(C.committeeV===2&&C.members)?C.members:[];
+  defs.forEach(function(d){
+    var o=old.filter(function(x){return String(x.position||'').toLowerCase()===d.position.toLowerCase()})[0];
+    if(o){d.name=o.name;d.photo=o.photo||'';d.desc=o.desc||'';d.portfolio=o.portfolio||'';d.pics=o.pics||[]}
+  });
+  var pos=defs.map(function(d){return d.position.toLowerCase()});
+  old.forEach(function(o){
+    if(pos.indexOf(String(o.position||'').toLowerCase())<0&&(o.photo||(o.name&&o.name!=='Name to be added'))){o.position=o.position||'Welfare Member';mem.push(o)}
+  });
+  if(!mem.length)mem=clone(DEFAULTS.members);
+  C.committee=defs;C.members=mem;C.committeeV=2;
+}
+if(!LIVE){var _s0=LS.get('nw_content',null);if(_s0&&!_s0.committeeV){C.committeeV=1;C.members=null}}
+migrateCommittee();
 var REPORTS=LIVE?[]:LS.get('nw_reports',[]);
 var LOG=LIVE?[]:LS.get('nw_log',[]);
 var SEQ=LS.get('nw_seq',0);
@@ -384,7 +430,7 @@ function saveC(){
   clearTimeout(_sv);_sv=setTimeout(pushContent,500);
 }
 async function pushContent(){
-  if(!SESSION)return;
+  if(!SESSION||!SESSION.ok2)return;
   var rows=Object.keys(C).map(function(k){var val=C[k];if(k==='notify')val={sendMemberEmails:!!(C.notify&&C.notify.sendMemberEmails)};return {key:k,value:val,updated_at:new Date().toISOString()}});
   var r=await sb.from('site_content').upsert(rows);
   if(r.error)toast('Could not save to the website: '+r.error.message);
@@ -457,33 +503,41 @@ function badge(s){return '<span class="badge '+statusClass(s)+'">'+esc(s)+'</spa
 /* ---------- public views ---------- */
 
 VIEWS.home=function(){
-  return '<section class="hero"><img class="wm" src="'+esc(logoSrc())+'" alt="" aria-hidden="true"><div class="wrap"><div class="hero-in"><div><h1>'+esc(C.site.tagline)+'</h1><p>'+esc(C.site.welcome)+'</p></div>'+heroArt()+'</div>'
+  return '<section class="hero"><img class="wm" src="'+logoSrc()+'" alt="" aria-hidden="true"><div class="wrap"><div class="hero-in"><div><h1>'+esc(C.site.tagline)+'</h1><p>'+esc(C.site.welcome)+'</p></div>'+heroArt()+'</div>'
   +'<div class="acts"><a class="btn primary" href="#/report">Request welfare support</a><a class="btn ghost" href="#/report?issue">Report an issue</a><a class="btn ghost" href="#/track">Track my report</a></div>'
   +'</div></section>'
   +'<section class="blk" style="padding-bottom:0"><div class="wrap"><div class="grid c3"><a class="card act" href="#/report"><h3>Request welfare support</h3><p>Funeral, wedding, naming ceremony, loan or other support.</p></a><a class="card act" href="#/report?issue"><h3>Report an issue</h3><p>Raise a welfare concern or complaint. You can stay anonymous.</p></a><a class="card act" href="#/track"><h3>Track my report</h3><p>See the status of a request with your reference number.</p></a></div></div></section>'
-  +'<section class="blk"><div class="wrap"><div class="urgent" role="note"><strong>Urgent?</strong> For a medical or welfare emergency call '+phoneLink(C.contact.emergency,1)+'. Do not wait for an online reply.</div>'
+  +'<section class="blk"><div class="wrap"><div class="flex spread"><h2>Welfare Committee</h2><a href="#/committee">See all</a></div>'+committeeBlock()+'</div></section>'
+  +'<section class="blk" style="padding-top:0"><div class="wrap"><div class="urgent" role="note"><strong>Urgent?</strong> For a medical or welfare emergency call '+phoneLink(C.contact.emergency,'<b>'+esc(C.contact.emergency)+'</b>')+'. Do not wait for an online reply.</div>'
   +'<h2>What the Welfare Committee does</h2><p>'+esc(C.site.about)+'</p><a class="btn dark" href="#/about">Read how it works</a></div></section>'
   +'<section class="blk" style="padding-top:0"><div class="wrap"><h2>How to get support</h2><ol class="steps">'+C.steps.map(function(x){return '<li><span><b>'+esc(x.h)+'</b> '+esc(x.p)+'</span></li>'}).join('')+'</ol></div></section>'
   +'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Current executives</h2><a href="#/executives">See all</a></div><div class="grid ppl">'+C.executives.slice(0,4).map(person).join('')+'</div></div></section>'
-  +'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Welfare Committee</h2><a href="#/committee">See all</a></div><div class="grid ppl">'+C.committee.slice(0,4).map(person).join('')+'</div></div></section>'
   +(C.gallery.length?'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Moments</h2><a href="#/gallery">See all</a></div>'+galleryGrid(C.gallery.slice(0,8),true)+'</div></section>':'')
   +'<section class="blk" style="padding-top:0"><div class="wrap"><h2>Contact the committee</h2><div class="card">'+contactBlock()+'</div></div></section>';
 };
 function contactBlock(){
   var c=C.contact;
   return '<p><b>Welfare complaints and requests</b><br>'+c.phones.map(function(n){return phoneLink(n)}).join('<br>')+'</p>'
-  +'<div class="urgent" style="margin:0 0 1em"><strong>Emergency line (health emergencies and urgent welfare)</strong><br><a href="'+tel(c.emergency)+'"><b>'+esc(c.emergency)+'</b></a></div>'
+  +'<div class="urgent" style="margin:0 0 1em"><strong>Emergency line (health emergencies and urgent welfare)</strong><br>'+phoneLink(c.emergency,'<b>'+esc(c.emergency)+'</b>')+'</div>'
   +'<p><b>Email:</b> <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a></p>'
   +(c.office?'<p><b>Office:</b> '+esc(c.office)+'</p>':'')+(c.hours?'<p><b>Office hours:</b> '+esc(c.hours)+'</p>':'')
-  +(c.socials&&c.socials.length?'<div class="socials">'+c.socials.map(function(x){return '<a class="btn ghost small" href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.label)+'</a>'}).join('')+'</div>':'');
+  +(c.socials&&c.socials.length?'<div class="socials">'+c.socials.map(function(x){return '<a class="btn ghost small" href="'+esc(safeUrl(x.url))+'" target="_blank" rel="noopener">'+esc(x.label)+'</a>'}).join('')+'</div>':'');
 }
 VIEWS.about=function(){return '<section class="blk"><div class="wrap"><h1>About NAMSA Welfare</h1>'+sections(C.aboutSections)+'</div></section>'};
+function committeeBlock(){
+  var L=C.committee||[],M=C.members||[],h='';
+  if(L[0])h+='<div class="tier xl">'+person(L[0])+'</div>';
+  if(L[1])h+='<div class="tier l">'+person(L[1])+'</div>';
+  if(L.length>2)h+='<div class="tier m">'+L.slice(2).map(function(x){return person(x)}).join('')+'</div>';
+  if(M.length)h+='<h3 style="margin-top:22px">Welfare Members</h3><div class="grid ppl">'+M.map(function(x){return person(x)}).join('')+'</div>';
+  return h;
+}
 VIEWS.executives=function(){return '<section class="blk"><div class="wrap"><h1>NAMSA Executives</h1><div class="grid ppl">'+C.executives.map(person).join('')+'</div></div></section>'};
-VIEWS.committee=function(){return '<section class="blk"><div class="wrap"><h1>Welfare Committee</h1><div class="grid ppl">'+C.committee.map(person).join('')+'</div></div></section>'};
+VIEWS.committee=function(){return '<section class="blk"><div class="wrap"><h1>Welfare Committee</h1>'+committeeBlock()+'</div></section>'};
 VIEWS.guidelines=function(){
   var g=C.guidelines;
   return '<section class="blk"><div class="wrap"><h1>Welfare Guidelines</h1><p>'+esc(g.intro)+'</p>'+sections(g.sections)
-  +(g.docs.length?'<h2>Official documents</h2><div class="grid">'+g.docs.map(function(d){return '<a class="card" href="'+esc(d.url)+'" rel="noopener"><b>'+esc(d.name)+'</b><br><span class="hint">Open document</span></a>'}).join('')+'</div>':'')
+  +(g.docs.length?'<h2>Official documents</h2><div class="grid">'+g.docs.map(function(d){return '<a class="card" href="'+esc(safeUrl(d.url))+'" rel="noopener"><b>'+esc(d.name)+'</b><br><span class="hint">Open document</span></a>'}).join('')+'</div>':'')
   +'</div></section>';
 };
 function galleryGrid(list,mini){return '<div class="gal'+(mini?' mini':'')+'">'+list.map(function(g){return '<button onclick="openPic(\''+g.id+'\')" aria-label="'+esc(g.caption||'Open picture')+'"><img src="'+esc(g.photo)+'" alt="'+esc(g.caption||'NAMSA picture')+'"></button>'}).join('')+'</div>'}
@@ -496,14 +550,15 @@ function showImg(src,cap){
   d.addEventListener('click',function(e){if(e.target===d||e.target.tagName==='BUTTON')close()});
   document.addEventListener('keydown',k);document.body.appendChild(d);
 }
-function findPerson(id){return C.executives.concat(C.committee).filter(function(x){return x.id===id})[0]}
+function findPerson(id){return C.executives.concat(C.committee,C.members||[]).filter(function(x){return x.id===id})[0]}
+function showPersonMain(id){var p=findPerson(id);if(p&&p.photo)showImg(p.photo,p.name+' - '+p.position)}
 function showPersonPic(id,j){var p=findPerson(id);if(p&&p.pics&&p.pics[j])showImg(p.pics[j],p.name)}
 function openPerson(id){
   var p=findPerson(id);if(!p)return;
   var pics=p.pics||[];
   var ini=(p.name||'?').replace('Name to be added','?').trim().split(/\s+/).map(function(w){return w[0]}).slice(0,2).join('').toUpperCase()||'?';
   var d=document.createElement('div');d.className='lb pd';d.setAttribute('role','dialog');d.setAttribute('aria-label','Profile of '+p.name);
-  d.innerHTML='<div class="pcard"><div class="flex" style="flex-wrap:nowrap"><div class="ph2">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':esc(ini))+'</div><div><p style="margin:0;color:var(--go);font-weight:700">'+esc(p.position)+'</p><h2 style="margin:0">'+esc(p.name)+'</h2></div></div>'
+  d.innerHTML='<div class="pcard"><div class="bigph" role="button" tabindex="0" aria-label="Enlarge photo" onclick="showPersonMain(\''+p.id+'\')">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="Photo of '+esc(p.name)+'">':esc(ini))+'</div><p style="margin:0;color:var(--go);font-weight:700">'+esc(p.position)+'</p><h2 style="margin:0 0 4px">'+esc(p.name)+'</h2>'
    +(p.desc?'<p style="margin-top:14px">'+esc(p.desc)+'</p>':'')
    +'<h3 style="margin-top:16px">Portfolio</h3>'+(p.portfolio?'<p style="white-space:pre-wrap">'+esc(p.portfolio)+'</p>':'<p class="hint">Portfolio coming soon.</p>')
    +(pics.length?'<h3>Pictures</h3><div class="gal mini">'+pics.map(function(src,j){return '<button onclick="showPersonPic(\''+p.id+'\','+j+')" aria-label="Open picture '+(j+1)+'"><img src="'+esc(src)+'" alt=""></button>'}).join('')+'</div>':'')
@@ -537,8 +592,9 @@ VIEWS.report=function(){
   var k=C.categories.filter(function(x){return x.id===state.cat})[0];
   if(!k){state.cat=null;return VIEWS.report()}
   var anon=state.anon&&k.anon;
+  state.formT=Date.now();
   var h='<section class="blk"><div class="wrap" style="max-width:640px"><button class="btn ghost small" onclick="backCat()">&lsaquo; Change request type</button><h1 style="margin-top:14px">'+esc(k.label)+'</h1>';
-  if(k.emergency){h+='<div class="urgent" role="alert"><strong>This is an emergency request.</strong><br>Call the Welfare emergency line now: '+phoneLink(C.contact.emergency,1)+'.<br>Submitting this form records your request, but the committee cannot promise an immediate reply online.</div>'}
+  if(k.emergency){h+='<div class="urgent" role="alert"><strong>This is an emergency request.</strong><br>Call the Welfare emergency line now: '+phoneLink(C.contact.emergency,'<b>'+esc(C.contact.emergency)+'</b>')+'.<br>Submitting this form records your request, but the committee cannot promise an immediate reply online.</div>'}
   h+='<form id="wf" onsubmit="return submitReport(event)" novalidate>';
   if(k.subs.length){h+='<label for="sub">Which applies?</label><select id="sub" required><option value="">Choose one</option>'+k.subs.map(function(s){return '<option'+(state.sub===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select>'}
   if(k.anon){h+='<div class="check"><input type="checkbox" id="anon" '+(state.anon?'checked':'')+' onchange="toggleAnon(this.checked)"><label for="anon" style="margin:0">Report anonymously</label></div>'}
@@ -562,10 +618,12 @@ function backCat(){state.cat=null;render()}
 function toggleAnon(v){state.anon=v;render()}
 function submitReport(e){
   e.preventDefault();
+  if(CONFIG_ERR){$('ferr').textContent='We cannot send requests right now because the website could not connect. Please call the welfare numbers instead.';return false}
   var k=C.categories.filter(function(x){return x.id===state.cat})[0];
   var anon=state.anon&&k.anon;
   function v(id){var el=$(id);return el?el.value.trim():''}
   if(v('hp'))return false; /* spam trap */
+  if(Date.now()-(state.formT||0)<3000){$('ferr').textContent='Please wait a moment, then tap Submit again.';return false}
   var err=[];
   if(k.subs.length&&!v('sub'))err.push('Choose which option applies.');
   if(!anon){
@@ -603,7 +661,7 @@ function confirmView(){
   return '<section class="blk"><div class="wrap" style="max-width:640px"><div class="note ok"><b>Request received.</b> Thank you. Save your reference number.</div>'
   +'<h1>Your reference number</h1><div class="refbox" id="refbox">'+esc(r.ref)+'</div>'
   +'<div class="card"><p><b>Date submitted:</b> '+esc(fmt(r.created))+'</p><p><b>Category:</b> '+esc(r.category)+(r.sub?' ('+esc(r.sub)+')':'')+'</p><p style="margin:0"><b>Current status:</b> '+badge(r.status)+'</p></div>'
-  +(r.emergency?'<div class="urgent" style="margin-top:14px"><strong>Emergency?</strong> Call <b>'+esc(C.contact.emergency)+'</b> now.</div>':'')
+  +(r.emergency?'<div class="urgent" style="margin-top:14px"><strong>Emergency?</strong> Call '+phoneLink(C.contact.emergency,'<b>'+esc(C.contact.emergency)+'</b>')+' now.</div>':'')
   +'<h3 style="margin-top:20px">How to track it</h3><p>Open <b>Track My Report</b> and enter this reference number'+(r.anon?'.':' with the last 4 digits of your phone number.')+'</p>'
   +(r.email&&C.notify.sendMemberEmails&&!LIVE?'<p class="hint">A confirmation with your reference number would be emailed to '+esc(r.email)+' (email sending is simulated in this prototype).</p>':'')
   +'<div class="flex"><a class="btn dark" href="#/track" onclick="state.trackRef=\''+esc(r.ref)+'\';state.done=null">Track this report</a><button class="btn ghost" onclick="copyRef()">Copy number</button><button class="btn ghost" onclick="state.done=null;go(\'home\')">Done</button></div></div></section>';
@@ -619,7 +677,7 @@ VIEWS.track=function(){
 function doTrack(e){
   e.preventDefault();
   var ref=$('tr').value.trim().toUpperCase(),p4=$('t4').value.trim();
-  if(LIVE){var wt=LOCK.left('track');if(wt){$('terr').textContent='Too many attempts. Try again in '+wt+' minute(s).';return false}liveTrack(ref,p4).then(function(r2){if(!r2){LOCK.fail('track',5,10);$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return}LOCK.ok('track');$('terr').textContent='';state.trackRef=ref;state.track4=p4;drawTrack(r2)});return false}
+  if(LIVE){liveTrack(ref,p4).then(function(r2){if(!r2){$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return}$('terr').textContent='';state.trackRef=ref;state.track4=p4;drawTrack(r2)});return false}
   var r=REPORTS.filter(function(x){return x.ref===ref})[0];
   var ok=r&&(r.anon||(p4&&r.phone.replace(/\D/g,'').slice(-4)===p4));
   if(!ok){$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return false}
@@ -628,16 +686,54 @@ function doTrack(e){
 function drawTrack(r){
   var h='<div class="card" style="margin-top:22px"><p><b>'+esc(r.ref)+'</b></p><p>Category: '+esc(r.category)+(r.sub?' ('+esc(r.sub)+')':'')+'<br>Submitted: '+esc(fmt(r.created))+'</p><p style="margin:0">Status: '+badge(r.status)+'</p></div>';
   h+='<h3 style="margin-top:22px">Progress</h3><ul class="timeline">'+r.history.map(function(x){return '<li><b>'+esc(x.status)+'</b><br><span class="hint">'+esc(fmt(x.t))+'</span></li>'}).join('')+'</ul>';
-  h+='<h3 style="margin-top:22px">Messages</h3>'+(r.messages.length?r.messages.map(function(m){return '<div class="msg '+(m.from==='Committee'?'c':'m')+'"><small>'+esc(m.from)+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>');
+  h+='<h3 style="margin-top:22px">Messages</h3>'+(r.messages.length?r.messages.map(function(m){return '<div class="msg '+(m.from==='Committee'?'c':'m')+'"><small>'+esc(m.from)+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+msgFiles(m,false)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>');
   if(r.status==='Information Required'){h+='<div class="note">The committee needs more information. Reply below.</div>'}
-  h+='<label for="rp">Reply to the committee</label><textarea id="rp"></textarea><button class="btn dark" style="margin-top:10px" onclick="memberReply(\''+esc(r.ref)+'\')">Send reply</button>';
+  h+='<label for="rp">Reply to the committee</label><textarea id="rp"></textarea><label for="rpf">Attach documents <span class="hint">(optional: PDF, JPG or PNG, up to 3 files, 5 MB each)</span></label><input type="file" id="rpf" multiple accept=".pdf,.jpg,.jpeg,.png" style="width:100%;padding:10px;border:2px dashed var(--line);border-radius:12px;background:var(--surface)"><button class="btn dark" style="margin-top:10px" onclick="memberReply(\''+esc(r.ref)+'\')">Send reply</button>';
   $('tres').innerHTML=h;
 }
-function memberReply(ref){
-  var t=$('rp').value.trim();if(!t){toast('Write a message first');return}
-  if(LIVE){sb.rpc('member_reply',{p_ref:ref,p_last4:state.track4||'',p_text:t}).then(function(res){if(res.error||!res.data){toast('Could not send your reply');return}toast('Reply sent');liveTrack(ref,state.track4).then(function(r2){if(r2)drawTrack(r2)})});return}
+function validFiles(input,max){
+  var out=[],err='',list=(input&&input.files)?input.files:[];
+  if(list.length>max)return {err:'You can attach up to '+max+' files at a time.',files:[]};
+  for(var i=0;i<list.length;i++){var f=list[i];
+    if(f.size>5*1024*1024){err=f.name+' is larger than 5 MB.';break}
+    if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){err=f.name+' is not a PDF, JPG or PNG.';break}
+    out.push(f)}
+  return {err:err,files:out};
+}
+function safeName(n){return String(n).replace(/[^A-Za-z0-9._-]/g,'_').slice(-80)}
+function randToken(){var a=new Uint8Array(16);try{crypto.getRandomValues(a)}catch(e){for(var i=0;i<16;i++)a[i]=Math.floor(Math.random()*256)}return Array.prototype.map.call(a,function(b){return ('0'+b.toString(16)).slice(-2)}).join('')}
+function msgFiles(m,admin){
+  var fl=m.files||[];if(!fl.length)return '';
+  return '<div class="flex" style="margin-top:6px">'+fl.map(function(f){
+    if(f.url)return '<a class="btn ghost small" href="'+esc(safeUrl(f.url))+'" target="_blank" rel="noopener noreferrer">'+esc(f.name)+'</a>';
+    if(admin&&LIVE&&f.path)return '<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>';
+    return '<span class="badge">'+esc(f.name)+'</span>';
+  }).join('')+'</div>';
+}
+async function memberReply(ref){
+  var t=$('rp').value.trim();
+  var vf=validFiles($('rpf'),3);
+  if(vf.err){toast(vf.err);return}
+  if(!t&&!vf.files.length){toast('Write a message or attach a document first');return}
+  if(LIVE){
+    try{
+      toast('Sending...');
+      var files=[];
+      for(var i=0;i<vf.files.length;i++){
+        var f=vf.files[i],path='reply/'+safeName(ref)+'/'+randToken()+'_'+safeName(f.name);
+        var up=await sb.storage.from('attachments').upload(path,f,{contentType:f.type||'application/octet-stream'});
+        if(up.error)throw up.error;
+        files.push({name:f.name,size:f.size,path:path});
+      }
+      var res=await sb.rpc('member_reply',{p_ref:ref,p_last4:state.track4||'',p_text:t,p_files:files});
+      if(res.error||!res.data)throw (res.error||new Error('failed'));
+      toast('Reply sent');
+      var r2=await liveTrack(ref,state.track4);if(r2)drawTrack(r2);
+    }catch(err){toast('Could not send your reply. Please try again.')}
+    return;
+  }
   var r=REPORTS.filter(function(x){return x.ref===ref})[0];if(!r)return;
-  r.messages.push({from:'Member',text:t,t:Date.now()});saveR();
+  r.messages.push({from:'Member',text:t,files:vf.files.map(function(f){return {name:f.name,size:f.size}}),t:Date.now()});saveR();
   logit('Member','Replied on '+ref+'. Alert to '+C.notify.alertEmail+' (simulated).');
   toast('Reply sent');drawTrack(r);
 }
@@ -653,69 +749,85 @@ AFTER.track=function(){if(state.trackRef&&!$('tres').innerHTML){/* require verif
 function liveLoginView(){
   return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Admin sign in</h1><div class="note">For authorised NAMSA Welfare administrators only.</div><form onsubmit="return doLiveLogin(event)"><label for="em2">Email</label><input type="email" id="em2" autocomplete="username" required><label for="pw">Password</label><input type="password" id="pw" autocomplete="current-password" required><p id="lerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Sign in</button></form></div></section>';
 }
-var LOCK={
-  get:function(k){return LS.get('nw_lk_'+k,{n:0,until:0})},
-  fail:function(k,max,mins){var x=LOCK.get(k);x.n++;if(x.n>=max)x.until=Date.now()+mins*60000*Math.min(8,Math.pow(2,Math.floor(x.n/max)-1));LS.set('nw_lk_'+k,x)},
-  left:function(k){var x=LOCK.get(k);return x.until>Date.now()?Math.ceil((x.until-Date.now())/60000):0},
-  ok:function(k){LS.set('nw_lk_'+k,{n:0,until:0})}
-};
-var MFA=null;
 async function doLiveLogin(e){
   e.preventDefault();
-  var b=e.target.querySelector('button'),le=$('lerr'),w=LOCK.left('login');
-  if(w){le.textContent='Too many attempts. Try again in '+w+' minute(s).';return false}
+  var b=e.target.querySelector('button');
+  var lk=LS.get('nw_lock',{n:0,until:0});
+  if(lk.until>Date.now()){$('lerr').textContent='Too many tries. Please wait 15 minutes and try again.';return false}
   b.disabled=true;
   var r=await sb.auth.signInWithPassword({email:$('em2').value.trim(),password:$('pw').value});
-  if(r.error){LOCK.fail('login',5,15);le.textContent='Wrong email or password.';b.disabled=false;return false}
-  LOCK.ok('login');
-  if(await mfaGate())return finishLogin();
-  return false;
+  if(r.error){lk.n=(lk.n||0)+1;if(lk.n>=5){lk.until=Date.now()+15*60000;lk.n=0}LS.set('nw_lock',lk);$('lerr').textContent='Wrong email or password.';b.disabled=false;return false}
+  LS.set('nw_lock',{n:0,until:0});
+  var ok=await loadStaff(r.data.user);
+  if(!ok){$('lerr').textContent='This account is not set up as a Welfare admin yet. Ask the Super Administrator.';b.disabled=false;return false}
+  state.mfa=null;render();return false;
 }
-async function mfaGate(){
-  var a=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
-  if(a.error){await sb.auth.signOut();toast('Could not check two-step sign-in. Try again.');render();return false}
-  if(a.data.currentLevel==='aal2')return true;
-  var f=await sb.auth.mfa.listFactors(),t=f.data&&f.data.totp&&f.data.totp[0];
-  var h='<section class="blk"><div class="wrap" style="max-width:460px"><h1>Two-step verification</h1>';
-  if(t){MFA={id:t.id};h+='<div class="note">Enter the 6-digit code from your authenticator app.</div>'}
-  else{
-    var en=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'NAMSA admin '+Date.now()});
-    if(en.error){await sb.auth.signOut();toast('Could not start two-step setup');render();return false}
-    MFA={id:en.data.id};
-    h+='<div class="note">First sign-in: scan this code with Google Authenticator, Microsoft Authenticator or Authy, then enter the 6-digit code it shows.</div><img alt="Authenticator setup code" src="'+esc(en.data.totp.qr_code)+'" style="width:200px;height:200px;background:#fff;border-radius:12px"><p class="hint">Cannot scan? Enter this key: <b>'+esc(en.data.totp.secret)+'</b></p>';
+
+function mfaView(){
+  var m=state.mfa,box='<section class="blk"><div class="wrap" style="max-width:460px">';
+  if(!m){startMfa();return box+'<h1>Two-step check</h1><p>One moment...</p></div></section>'}
+  if(m.mode==='error'){return box+'<h1>Two-step check</h1><p style="color:var(--danger);font-weight:600">'+esc(m.msg)+'</p><button class="btn ghost" onclick="doSignOut()">Sign out</button></div></section>'}
+  var h=box;
+  if(m.mode==='enroll'){
+    h+='<h1>Set up two-step sign-in</h1><p>This protects the welfare records even if a password is stolen.</p><ol><li>Install <b>Google Authenticator</b> or <b>Microsoft Authenticator</b> on your phone.</li><li>In the app, add an account and scan this code, or type the key.</li></ol><div class="card" style="text-align:center"><img src="'+esc(m.qr)+'" alt="Scan this code with your authenticator app" style="width:200px;height:200px;background:#fff;padding:8px;border-radius:10px"><p class="hint" style="margin:8px 0 0">Or type this key:<br><b style="word-break:break-all">'+esc(m.secret)+'</b></p></div>';
+  }else{
+    h+='<h1>Two-step check</h1><p>Open your authenticator app and enter the 6-digit code for NAMSA.</p>';
   }
-  $('app').innerHTML=h+'<form onsubmit="return doMfa(event)"><label for="mc">6-digit code</label><input type="text" id="mc" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required><p id="merr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Verify</button></form></div></section>';
-  return false;
+  h+='<form onsubmit="return doMfa(event)"><label for="mc">6-digit code</label><input type="text" id="mc" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required><p id="lerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">'+(m.mode==='enroll'?'Turn on and continue':'Verify')+'</button></form><p style="margin-top:16px"><button class="btn ghost small" type="button" onclick="doSignOut()">Cancel</button></p></div></section>';
+  return h;
+}
+async function startMfa(){
+  try{
+    var a=await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(a.data&&a.data.currentLevel==='aal2'){await finishLogin();return}
+    var f=await sb.auth.mfa.listFactors();
+    var ver=(f.data&&f.data.totp)||[];
+    if(ver.length){state.mfa={mode:'verify',factorId:ver[0].id}}
+    else{
+      var all=(f.data&&f.data.all)||[];
+      for(var i=0;i<all.length;i++){if(all[i].status==='unverified'){await sb.auth.mfa.unenroll({factorId:all[i].id})}}
+      var e=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'NAMSA admin '+Date.now()});
+      state.mfa=e.error?{mode:'error',msg:'Could not start two-step setup: '+e.error.message}:{mode:'enroll',factorId:e.data.id,qr:e.data.totp.qr_code,secret:e.data.totp.secret};
+    }
+  }catch(err){state.mfa={mode:'error',msg:'Could not start the two-step check. Please try again.'}}
+  render();
 }
 async function doMfa(e){
-  e.preventDefault();
-  var w=LOCK.left('mfa');if(w){$('merr').textContent='Too many attempts. Try again in '+w+' minute(s).';return false}
-  var r=await sb.auth.mfa.challengeAndVerify({factorId:MFA.id,code:$('mc').value.replace(/\D/g,'')});
-  if(r.error){LOCK.fail('mfa',5,15);$('merr').textContent='That code did not work. Use the newest code.';return false}
-  LOCK.ok('mfa');return finishLogin();
+  e.preventDefault();var b=e.target.querySelector('button[type=submit]');b.disabled=true;
+  var r=await sb.auth.mfa.challengeAndVerify({factorId:state.mfa.factorId,code:$('mc').value.replace(/\D/g,'')});
+  if(r.error){$('lerr').textContent='That code did not work. Check the app and try again.';b.disabled=false;return false}
+  await finishLogin();return false;
 }
 async function finishLogin(){
-  var u=await sb.auth.getUser(),ok=u.data&&u.data.user&&await loadStaff(u.data.user);
-  if(!ok){toast('This account is not set up as a Welfare admin yet. Ask the Super Administrator.');render();return false}
-  logit(SESSION.name,'Signed in.');state.adminTab=(SESSION.role==='content')?'people':'reports';
+  state.mfa=null;SESSION.ok2=true;bumpIdle();
+  logit(SESSION.name,'Signed in with two-step check.');
+  state.adminTab=(SESSION.role==='content')?'people':'reports';
   if(SESSION.role!=='content')await loadReports();
-  render();return false;
+  render();
 }
 async function loadStaff(user){
   var q=await sb.from('staff').select('role,name').eq('user_id',user.id).maybeSingle();
-  if(q.data){SESSION={role:q.data.role,name:q.data.name||ROLES[q.data.role],email:user.email};bumpIdle();return true}
+  if(q.data){SESSION={role:q.data.role,name:q.data.name||ROLES[q.data.role],email:user.email,ok2:false};bumpIdle();return true}
   await sb.auth.signOut();return false;
 }
 async function restoreSession(){
   var r=await sb.auth.getSession();
-  if(r.data&&r.data.session){var aa=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(!aa.data||aa.data.currentLevel!=='aal2'){await sb.auth.signOut();return}var ok=await loadStaff(r.data.session.user);if(ok&&SESSION.role!=='content')await loadReports()}
+  if(r.data&&r.data.session){var ok=await loadStaff(r.data.session.user);if(ok){var aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(aal.data&&aal.data.currentLevel==='aal2'){SESSION.ok2=true;if(SESSION.role!=='content')await loadReports()}}}
 }
 async function loadContent(){
   var r=await sb.from('site_content').select('key,value');
   if(r.error||!r.data)return;
-  r.data.forEach(function(row){C[row.key]=row.value});
+  var has={};r.data.forEach(function(row){C[row.key]=row.value;has[row.key]=1});
+  if(!has.committeeV){C.committeeV=1}
+  if(!has.members){C.members=null}
+  migrateCommittee();
 }
-function doSignOut(){if(LIVE)sb.auth.signOut();SESSION=null;REPORTS=[];go('admin')}
+function doSignOut(){if(LIVE)sb.auth.signOut();SESSION=null;REPORTS=[];LOG=[];state.mfa=null;go('admin')}
+var _hiddenAt=0;
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){_hiddenAt=Date.now()}
+  else if(SESSION&&_hiddenAt&&Date.now()-_hiddenAt>15*60000){doSignOut();toast('You were signed out for your safety.')}
+});
 function fromRow(x){return {id:x.id,ref:x.ref,created:new Date(x.created_at).getTime(),category:x.category,sub:x.sub||'',emergency:x.emergency,anon:x.anon,name:x.name||'',sid:x.sid||'',phone:x.phone||'',email:x.email||'',programme:x.programme||'',level:x.level||'',contact:x.contact||'',desc:x.descr||'',amount:x.amount||'',files:x.files||[],status:x.status,history:x.history||[],messages:x.messages||[],notes:x.notes||[]}}
 var _lastLoad=0,_lastLog=0;
 async function loadReports(){
@@ -733,7 +845,7 @@ function syncReport(r){
 }
 async function refreshReports(){await loadReports();render();toast('Updated')}
 AFTER.admin=function(){
-  if(!LIVE||!SESSION||SESSION.role==='content')return;
+  if(!LIVE||!SESSION||!SESSION.ok2||SESSION.role==='content')return;
   if((state.adminTab==='reports'||state.adminTab==='stats')&&Date.now()-_lastLoad>30000){loadReports().then(function(){if(route()==='admin')render()})}
   if(state.adminTab==='log'&&Date.now()-_lastLog>15000){loadLog().then(function(){if(route()==='admin')render()})}
 };
@@ -788,9 +900,10 @@ async function submitLive(k,anon,v,files,raw,btn){
 
 /* ---------- admin ---------- */
 VIEWS.admin=function(){
+  if(CONFIG_ERR)return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Admin</h1><p style="color:var(--danger);font-weight:600">The website could not connect to its database, so admin sign-in is switched off. Refresh the page or try again later.</p></div></section>';
+  if(LIVE&&SESSION&&!SESSION.ok2)return mfaView();
   if(!SESSION){
     if(LIVE)return liveLoginView();
-    if(/^https:\/\//.test(SUPABASE_URL))return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Admin sign in unavailable</h1><div class="note">The secure server could not be reached. Check your internet connection and reload the page.</div></div></section>';
     return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Committee sign in</h1><div class="note">Prototype sign in. In the real site this uses each administrator\'s own email, a strong password and a two-step code.</div>'
     +'<form onsubmit="return doLogin(event)"><label for="role">Sign in as</label><select id="role"><option value="super">Super Administrator</option><option value="welfare">Welfare Administrator</option><option value="content">Content Administrator</option></select>'
     +'<label for="pin">Demo PIN</label><input type="password" id="pin" inputmode="numeric" placeholder="Enter PIN"><p id="lerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Sign in</button></form></div></section>';
@@ -798,7 +911,7 @@ VIEWS.admin=function(){
   var role=SESSION.role;
   var tabs=[];
   if(role==='super'||role==='welfare'){tabs.push(['reports','Requests'],['stats','Statistics'])}
-  if(role==='super'||role==='content'){tabs.push(['people','Executives and committee'],['pages','Pages'],['gallery','Pictures'],['appearance','Logo and colours'],['contact','Contact details'])}
+  if(role==='super'||role==='content'){tabs.push(['people','Executives and committee leaders'],['members','Welfare members'],['pages','Pages'],['gallery','Pictures'],['appearance','Logo and colours'],['contact','Contact details'])}
   if(role==='super'){tabs.push(['settings','Categories and alerts'])}
   if(role==='super'||role==='welfare'){tabs.push(['log','Activity'])}
   if(role==='super'){tabs.push(['backup','Backup'])}
@@ -810,7 +923,7 @@ VIEWS.admin=function(){
 };
 function doLogin(e){
   e.preventDefault();
-  if(/^https:\/\//.test(SUPABASE_URL))return false;
+  if(!DEMO)return false;
   if($('pin').value!=='1515'){$('lerr').textContent='Wrong PIN. Try again.';return false}
   SESSION={role:$('role').value,name:ROLES[$('role').value]};
   logit(SESSION.name,'Signed in (demo).');state.adminTab='reports';render();return false;
@@ -848,7 +961,7 @@ ADMIN.reports=function(){
   +'<div><label for="fs" style="margin-top:0">Status</label><select id="fs" onchange="state.filter.status=this.value;render()"><option value="">All</option>'+STATUSES.map(function(s){return '<option'+(f.status===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select></div></div>';
   if(!list.length){return h+'<div class="card"><p style="margin:0">'+(REPORTS.length?'No requests match these filters.':'No requests yet. When a member submits the form, it appears here.')+'</p></div>'}
   h+='<div class="scroll-x"><table><thead><tr><th>Reference</th><th>Name</th><th>Category</th><th>Level</th><th>Date</th><th>Status</th></tr></thead><tbody>'
-  +list.map(function(r){return '<tr class="click" tabindex="0" onclick="openRep(\''+String(r.ref).replace(/[^A-Za-z0-9-]/g,'')+'\')" onkeydown="if(event.key===\'Enter\')openRep(\''+String(r.ref).replace(/[^A-Za-z0-9-]/g,'')+'\')"><td><b>'+esc(r.ref)+'</b>'+(r.emergency?' <span class="badge bad">Emergency</span>':'')+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.category)+(r.sub?'<br><span class="hint">'+esc(r.sub)+'</span>':'')+'</td><td>'+esc(r.level||'-')+'</td><td>'+esc(fmtDay(r.created))+'</td><td>'+badge(r.status)+'</td></tr>'}).join('')+'</tbody></table></div>';
+  +list.map(function(r){return '<tr class="click" tabindex="0" onclick="openRep(\''+r.ref+'\')" onkeydown="if(event.key===\'Enter\')openRep(\''+r.ref+'\')"><td><b>'+esc(r.ref)+'</b>'+(r.emergency?' <span class="badge bad">Emergency</span>':'')+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.category)+(r.sub?'<br><span class="hint">'+esc(r.sub)+'</span>':'')+'</td><td>'+esc(r.level||'-')+'</td><td>'+esc(fmtDay(r.created))+'</td><td>'+badge(r.status)+'</td></tr>'}).join('')+'</tbody></table></div>';
   return h;
 };
 function keepFocus(id){
@@ -867,12 +980,89 @@ function reportDetail(ref){
   +'<p><b>Situation:</b><br>'+esc(r.desc).replace(/\n/g,'<br>')+'</p>'
   +'<p style="margin:0"><b>Attachments:</b> '+(r.files.length?'<span class="flex">'+r.files.map(function(f){return (LIVE&&f.path)?'<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>':esc(f.name)+' ('+Math.round(f.size/1024)+' KB)'}).join('')+'</span>':'None')+'</p></div>';
   h+='<h3 style="margin-top:22px">Change status</h3><div class="flex"><select id="ns" style="max-width:280px">'+STATUSES.map(function(s){return '<option'+(r.status===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select><button class="btn dark small" onclick="setStatus(\''+r.ref+'\')">Update status</button></div>';
-  h+='<h3 style="margin-top:22px">Conversation with member</h3>'+(r.messages.length?r.messages.map(function(m){return '<div class="msg '+(m.from==='Committee'?'c':'m')+'"><small>'+esc(m.from)+(m.by?' ('+esc(m.by)+')':'')+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>')
-  +'<label for="am2">Message to member</label><textarea id="am2" placeholder="Please provide additional information about..."></textarea><div class="flex" style="margin-top:10px"><button class="btn dark small" onclick="adminMsg(\''+r.ref+'\')">Send message</button><button class="btn ghost small" onclick="$(\'am2\').value=\'Please provide additional information so we can continue reviewing your request.\'">Use sample request</button></div>';
+  h+='<h3 style="margin-top:22px">Letter to the Financial Controller</h3><p class="hint">When you have reviewed everything, create the letter. It copies the General Secretary and the President.</p><button class="btn dark small" onclick="openLetter(\''+r.ref+'\')">Generate letter</button>';
+  h+='<h3 style="margin-top:22px">Conversation with member</h3>'+(r.messages.length?r.messages.map(function(m){return '<div class="msg '+(m.from==='Committee'?'c':'m')+'"><small>'+esc(m.from)+(m.by?' ('+esc(m.by)+')':'')+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+msgFiles(m,true)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>')
+  +'<label for="am2">Message to member</label><textarea id="am2" placeholder="Please provide additional information about..."></textarea><label for="am2f">Attach documents to send to the member <span class="hint">(optional: PDF, JPG or PNG, up to 3 files, 5 MB each)</span></label><input type="file" id="am2f" multiple accept=".pdf,.jpg,.jpeg,.png" style="width:100%;padding:10px;border:2px dashed var(--line);border-radius:12px;background:var(--surface)"><div class="flex" style="margin-top:10px"><button class="btn dark small" onclick="adminMsg(\''+r.ref+'\')">Send message</button><button class="btn ghost small" onclick="$(\'am2\').value=\'Please provide additional information so we can continue reviewing your request.\'">Use sample request</button></div>';
   h+='<h3 style="margin-top:22px">Internal notes <span class="hint">(never shown to the member)</span></h3>'+(r.notes.length?r.notes.map(function(n){return '<div class="msg" style="background:#fff1cc;color:#4a3300"><small>'+esc(n.by)+' &middot; '+esc(fmt(n.t))+'</small><br>'+esc(n.text)+'</div>'}).join(''):'<p class="hint">No notes.</p>')
   +'<label for="nt">Add a note</label><textarea id="nt"></textarea><button class="btn ghost small" style="margin-top:10px" onclick="addNote(\''+r.ref+'\')">Save note</button>';
   h+='<h3 style="margin-top:22px">Status history</h3><ul class="timeline">'+r.history.map(function(x){return '<li><b>'+esc(x.status)+'</b> by '+esc(x.by)+'<br><span class="hint">'+esc(fmt(x.t))+'</span></li>'}).join('')+'</ul>';
   return h;
+}
+
+/* ---------- letter to Financial Controller ---------- */
+function letterEvidenceList(r){
+  var ev=[];
+  (r.files||[]).forEach(function(f){ev.push({name:f.name,path:f.path||'',isImage:/\.(jpe?g|png)$/i.test(f.name)})});
+  (r.messages||[]).forEach(function(m){if(m.from==='Member')(m.files||[]).forEach(function(f){ev.push({name:f.name,path:f.path||'',isImage:/\.(jpe?g|png)$/i.test(f.name)})})});
+  return ev;
+}
+function buildLetterBody(r){
+  var who=r.anon?'an anonymous member':(r.name+(r.sid?' (Student ID: '+r.sid+')':'')+(r.programme?', a '+(r.level?'Level '+r.level+' ':'')+r.programme+' student':''));
+  var what=r.category+(r.sub?' ('+r.sub+')':'');
+  var ev=letterEvidenceList(r),p=[];
+  p.push('The Welfare Committee has received and reviewed a request for '+what+' support from '+who+'. The request was submitted on '+fmtDay(r.created)+' under reference number '+r.ref+'.');
+  p.push('Reason for the request, as stated by the member:\n'+r.desc);
+  if(r.amount)p.push('The member is asking for support of GHS '+r.amount+'.');
+  p.push(ev.length?('The member submitted '+ev.length+' supporting document'+(ev.length>1?'s':'')+' as evidence, listed below.'):'The member did not attach any supporting documents.');
+  if(r.status==='Approved'||r.status==='Partially Approved')p.push('After its review, the Welfare Committee has marked this request as '+r.status+'.');
+  p.push('We therefore submit this request to your office for your consideration and appropriate action. Kindly inform the Welfare Committee of the outcome.');
+  return p.join('\n\n');
+}
+async function openLetter(ref){
+  var r=getR(ref);if(!r)return;
+  var L=C.letter||{},ev=letterEvidenceList(r);
+  if(LIVE){for(var i=0;i<ev.length;i++){if(ev[i].isImage&&ev[i].path){var sg=await sb.storage.from('attachments').createSignedUrl(ev[i].path,3600);if(sg.data)ev[i].url=sg.data.signedUrl}}}
+  state.letter={ref:ref,to:L.to||'',cc:L.cc||'',head:L.head||'',sec:L.sec||'',date:fmtDay(Date.now()),
+    subject:'REQUEST FOR '+String(r.category).toUpperCase()+' SUPPORT: '+(r.anon?'ANONYMOUS MEMBER':String(r.name).toUpperCase())+' ('+r.ref+')',
+    body:buildLetterBody(r),ev:ev};
+  logit(SESSION.name,'Prepared a letter for '+ref+'.');
+  drawLetter();
+}
+function letterSheet(forWord){
+  var l=state.letter,r=getR(l.ref)||{};
+  var head='<div style="text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px">'+(forWord?'':'<img src="'+esc(logoSrc())+'" alt="" style="width:64px;height:64px;border-radius:50%"><br>')+'<b style="font-size:14pt">'+esc(C.site.name)+'</b><br><span>Welfare Committee</span><br><span style="font-size:10pt">'+esc(C.contact.email)+' | '+esc((C.contact.phones||[])[0]||'')+'</span></div>';
+  var meta='<p style="margin:0 0 2px">'+esc(l.date)+'</p><p style="margin:0 0 10px">Our ref: '+esc(r.ref)+'</p><p style="margin:0 0 2px"><b>To:</b> '+esc(l.to)+'</p><p style="margin:0 0 12px"><b>Cc:</b> '+esc(l.cc)+'</p><p style="margin:0 0 10px">Dear Sir/Madam,</p><p style="margin:0 0 10px"><b><u>'+esc(l.subject)+'</u></b></p>';
+  var paras=String(l.body||'').split(/\n{2,}/).map(function(x){return '<p style="margin:0 0 10px;text-align:justify">'+esc(x).replace(/\n/g,'<br>')+'</p>'}).join('');
+  var rows=[['Reference',r.ref],['Date submitted',fmtDay(r.created)],['Request type',r.category+(r.sub?' ('+r.sub+')':'')]];
+  if(!r.anon){rows.push(['Name',r.name],['Student/member ID',r.sid],['Programme / level',(r.programme||'')+(r.level?' / Level '+r.level:'')],['Phone',r.phone]);if(r.email)rows.push(['Email',r.email])}
+  if(r.amount)rows.push(['Amount requested','GHS '+r.amount]);
+  rows.push(['Current status',r.status]);
+  var tbl='<table style="border-collapse:collapse;width:100%;min-width:0;font-size:11pt;margin:6px 0 12px">'+rows.map(function(x){return '<tr><td style="border:1px solid #000;padding:4px 8px;width:36%;background:#f2f2f2"><b>'+esc(x[0])+'</b></td><td style="border:1px solid #000;padding:4px 8px">'+esc(x[1])+'</td></tr>'}).join('')+'</table>';
+  var ev='';
+  if(l.ev.length){
+    ev='<p style="margin:0 0 6px"><b>Enclosures (evidence submitted by the member):</b></p><ol style="margin:0 0 8px 18px;padding:0">'+l.ev.map(function(e){return '<li>'+esc(e.name)+'</li>'}).join('')+'</ol>';
+    if(!forWord)ev+=l.ev.filter(function(e){return e.url}).map(function(e){return '<div style="margin:8px 0;page-break-inside:avoid"><img src="'+esc(e.url)+'" alt="'+esc(e.name)+'" style="max-width:100%;max-height:9cm;border:1px solid #999"><br><small>'+esc(e.name)+'</small></div>'}).join('');
+  }
+  var sign='<p style="margin:18px 0 6px">Yours faithfully,</p>'
+    +'<div style="margin-top:26px"><div style="border-bottom:1px solid #000;height:40px;width:260px"></div><b>'+esc(l.head||'')+'</b><br>Welfare Committee Head</div>'
+    +'<div style="margin-top:26px"><div style="border-bottom:1px solid #000;height:40px;width:260px"></div><b>'+(l.sec?esc(l.sec):'&nbsp;')+'</b><br>Welfare Secretary</div>';
+  return head+meta+paras+tbl+ev+sign;
+}
+function drawLetter(){
+  var old=document.querySelector('.lt');if(old)old.remove();
+  var l=state.letter,d=document.createElement('div');d.className='lt';d.setAttribute('role','dialog');d.setAttribute('aria-label','Letter');
+  function fld(id,label,key,ph){return '<label for="'+id+'">'+label+'</label><input type="text" id="'+id+'" value="'+esc(l[key])+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+' oninput="letterSet(\''+key+'\',this.value)">'}
+  d.innerHTML='<div class="noprint" style="max-width:794px;margin:0 auto"><div class="flex spread"><h2 style="margin:0">Letter to the Financial Controller</h2><button class="btn ghost small" onclick="closeLetter()">Close</button></div>'
+   +'<p class="hint">Check and edit anything below. Then print or save as PDF, sign it, and submit.</p>'
+   +fld('lt1','To','to')+fld('lt2','Copied to (Cc)','cc')+fld('lt3','Subject','subject')+fld('lt4','Date','date')
+   +'<label for="lt5">Letter text</label><textarea id="lt5" style="min-height:260px" oninput="letterSet(\'body\',this.value)">'+esc(l.body)+'</textarea>'
+   +fld('lt6','Welfare Committee Head (signs first)','head')+fld('lt7','Welfare Secretary (type the name here)','sec',"Type the Welfare Secretary's name")
+   +'<div class="flex" style="margin:16px 0"><button class="btn primary" onclick="window.print()">Print or save as PDF</button><button class="btn dark" onclick="downloadLetterDoc()">Download Word file</button></div>'
+   +'<p class="hint">On a phone, choose Print, then use Save as PDF or Share.</p></div>'
+   +'<div class="lsheet" id="lsheet">'+letterSheet(false)+'</div>';
+  document.body.appendChild(d);
+}
+function letterSet(k,v){
+  if(!state.letter)return;
+  state.letter[k]=v;
+  if(k==='to'||k==='cc'||k==='head'||k==='sec'){if(!C.letter)C.letter={};C.letter[k]=v;saveC()}
+  var sh=$('lsheet');if(sh)sh.innerHTML=letterSheet(false);
+}
+function closeLetter(){var o=document.querySelector('.lt');if(o)o.remove()}
+function downloadLetterDoc(){
+  var l=state.letter;
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Letter</title></head><body style="font-family:\'Times New Roman\',serif;font-size:12pt">'+letterSheet(true)+'</body></html>';
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+html],{type:'application/msword'}));a.download='NAMSA-Welfare-Letter-'+safeName(l.ref)+'.doc';document.body.appendChild(a);a.click();a.remove();
 }
 function getR(ref){return REPORTS.filter(function(x){return x.ref===ref})[0]}
 function setStatus(ref){
@@ -881,10 +1071,24 @@ function setStatus(ref){
   logit(SESSION.name,'Changed status of '+ref+' to '+s+'.'+(r.email&&C.notify.sendMemberEmails?' Email to member (simulated).':''));
   toast('Status updated');render();
 }
-function adminMsg(ref){
-  var t=$('am2').value.trim();if(!t){toast('Write a message first');return}
-  var r=getR(ref);r.messages.push({from:'Committee',by:SESSION.name,text:t,t:Date.now()});saveR();syncReport(r);
-  logit(SESSION.name,'Sent a message to the member on '+ref+'.');toast('Message sent');render();
+async function adminMsg(ref){
+  var t=$('am2').value.trim();
+  var vf=validFiles($('am2f'),3);
+  if(vf.err){toast(vf.err);return}
+  if(!t&&!vf.files.length){toast('Write a message or attach a document first');return}
+  var r=getR(ref);if(!r)return;
+  var files=[];
+  if(LIVE){
+    toast('Uploading...');
+    for(var i=0;i<vf.files.length;i++){
+      var f=vf.files[i],path=safeName(ref)+'/'+randToken()+'/'+safeName(f.name);
+      var up=await sb.storage.from('member-docs').upload(path,f,{contentType:f.type||'application/octet-stream'});
+      if(up.error){toast('Upload failed: '+up.error.message);return}
+      files.push({name:f.name,size:f.size,path:path,url:sb.storage.from('member-docs').getPublicUrl(path).data.publicUrl});
+    }
+  }else{files=vf.files.map(function(f){return {name:f.name,size:f.size}})}
+  r.messages.push({from:'Committee',by:SESSION.name,text:t,files:files,t:Date.now()});saveR();syncReport(r);
+  logit(SESSION.name,'Sent a message'+(files.length?' with '+files.length+' document(s)':'')+' to the member on '+ref+'.');toast('Message sent');render();
 }
 function addNote(ref){
   var t=$('nt').value.trim();if(!t)return;
@@ -910,7 +1114,7 @@ function peopleEditor(key,title){
   return h;
 }
 function setP(k,i,f,v){C[k][i][f]=v;saveC();logit(SESSION.name,'Edited '+k+' profile: '+C[k][i].name+'.');toast('Saved')}
-function addP(k){C[k].push({id:uid(),name:'New person',position:'Position',desc:'',photo:'',portfolio:'',pics:[]});saveC();logit(SESSION.name,'Added a person to '+k+'.');render()}
+function addP(k){C[k].push({id:uid(),name:'New person',position:(k==='members'?'Welfare Member':'Position'),desc:'',photo:'',portfolio:'',pics:[]});saveC();logit(SESSION.name,'Added a person to '+k+'.');render()}
 function delP(k,i){if(!confirm('Remove '+C[k][i].name+'?'))return;logit(SESSION.name,'Removed '+C[k][i].name+' from '+k+'.');C[k].splice(i,1);saveC();render()}
 function addPics(k,i,input){
   var files=Array.prototype.slice.call(input.files||[]);if(!files.length)return;
@@ -935,7 +1139,7 @@ function setPhoto(k,i,input){
   var f=input.files&&input.files[0];if(!f)return;
   var rd=new FileReader();
   rd.onload=function(){var img=new Image();img.onload=function(){
-    var s=360,cv=document.createElement('canvas');cv.width=s;cv.height=s;
+    var s=720,cv=document.createElement('canvas');cv.width=s;cv.height=s;
     var m=Math.min(img.width,img.height),sx=(img.width-m)/2,sy=(img.height-m)/2;
     cv.getContext('2d').drawImage(img,sx,sy,m,m,0,0,s,s);
     toast('Uploading...');
@@ -947,7 +1151,8 @@ function archiveP(k){
   var a=LS.get('nw_archive',[]);a.push({list:k,date:Date.now(),people:clone(C[k])});
   if(LS.set('nw_archive',a)){logit(SESSION.name,'Archived the '+k+' list.');toast('Archived. You can now replace the current list.')}else toast('Archive failed, storage is full.');
 }
-ADMIN.people=function(){return peopleEditor('executives','Executives')+'<hr style="border:0;border-top:1px solid var(--line);margin:28px 0">'+peopleEditor('committee','Welfare Committee')};
+ADMIN.people=function(){return peopleEditor('executives','Executives')+'<hr style="border:0;border-top:1px solid var(--line);margin:28px 0">'+peopleEditor('committee','Welfare Committee leaders')+'<p class="hint">Order on the site: Chairperson (largest), Committee Head, then Secretary, Treasurer and others. Use Move up and Move down to change the order.</p>'};
+ADMIN.members=function(){return peopleEditor('members','Welfare members')+'<p class="hint">Tap "Add a person" as many times as you need. Each member can have a photo, portfolio and more pictures.</p>'};
 
 /* pages editor */
 function secEditor(label,getList,setList){
@@ -1064,7 +1269,9 @@ function restoreBackup(){
 
 /* theme follows device; start */
 async function boot(){
+  if(window.top!==window.self){try{window.top.location=window.self.location}catch(e){document.body.innerHTML=''}return}
   if(!location.hash)location.hash='#/home';
+  if(CONFIG_ERR){var pe=$('protoBanner');if(pe){pe.style.display='';pe.style.background='#fdecea';pe.style.color='#7a0f0a';pe.innerHTML='<div class="wrap"><b>The website could not connect to its database.</b> Please do not submit a request right now. Call the welfare numbers instead, or try again later.</div>'}}
   if(LIVE){
     var pb=$('protoBanner');if(pb)pb.style.display='none';
     try{await loadContent()}catch(e){}
