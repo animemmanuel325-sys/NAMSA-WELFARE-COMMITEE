@@ -324,9 +324,15 @@ function genCode(){
   return REPORTS.some(function(r){return r.ref===c})?genCode():c;
 }
 function normCode(v){
-  var t=String(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-  var m=t.match(/^NAMSA([A-Z0-9]{4})([A-Z0-9]{4})([A-Z0-9]{4})$/);
-  return m?'NAMSA-'+m[1]+'-'+m[2]+'-'+m[3]:String(v||'').trim().toUpperCase();
+  var raw=String(v||'').trim().toUpperCase();
+  var t=raw.replace(/[^A-Z0-9]/g,'');
+  /* new random codes: NAMSA-XXXX-XXXX-XXXX (letters/digits without 0, O, 1, I) */
+  var m=t.match(/^NAMSA([A-HJ-NP-Z2-9]{4})([A-HJ-NP-Z2-9]{4})([A-HJ-NP-Z2-9]{4})$/);
+  if(m)return 'NAMSA-'+m[1]+'-'+m[2]+'-'+m[3];
+  /* older codes: NAMSA-WEL-2026-00007 (or the older anonymous form) stay exactly as issued */
+  var o=t.match(/^NAMSAWEL(\d{4})([A-Z0-9]{5,12})$/);
+  if(o)return 'NAMSA-WEL-'+o[1]+'-'+o[2];
+  return raw;
 }
 function uid(){return 'i'+Math.random().toString(36).slice(2,9)}
 function fmt(ts){try{return new Date(ts).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}}
