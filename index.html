@@ -193,6 +193,23 @@ a.act:hover{background:var(--info-bg)}
 .dsheet{margin-bottom:22px}
 @media print{.dsheet{break-after:page;page-break-after:always}.dsheet:last-of-type{break-after:auto;page-break-after:auto}.lt[data-print="1"] .dsheet:not([data-n="1"]),.lt[data-print="2"] .dsheet:not([data-n="2"]),.lt[data-print="3"] .dsheet:not([data-n="3"]){display:none!important}}
 
+
+/* advertisement space: fully separate from the rest of the site */
+.adz{border:2px dashed var(--line);border-radius:18px;background:repeating-linear-gradient(135deg,var(--surface),var(--surface) 12px,var(--bg) 12px,var(--bg) 24px);padding:14px}
+.adz-h{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
+.adz-h span{font-size:.78rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.adz-h small{color:var(--muted);font-size:.78rem}
+.adz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.adz-card{display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;text-decoration:none;color:var(--ink)}
+.adz-card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
+.adz-cap{display:block;padding:8px 10px;font-size:.85rem;color:var(--muted)}
+.adz-empty{text-align:center;color:var(--muted);padding:22px 8px;font-weight:600}
+
+
+.staffdot{display:inline-block;width:44px;height:44px;position:relative;vertical-align:middle;float:right;margin-top:-12px}
+.staffdot::after{content:"";position:absolute;left:15px;top:15px;width:14px;height:14px;border-radius:50%;background:var(--muted);opacity:.3;transition:opacity .2s,transform .2s}
+.staffdot:hover::after,.staffdot:focus-visible::after{opacity:.85;transform:scale(1.25)}
+
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:12px 22px;border-radius:14px;border:2px solid transparent;font-weight:700;cursor:pointer;text-decoration:none;text-align:center}
 .btn.primary{background:var(--sun);color:var(--sun-ink)}
@@ -329,19 +346,21 @@ footer.foot a{color:var(--brand)}
 <main id="app" tabindex="-1"></main>
 <footer class="foot"><div class="wrap" id="foot"></div></footer>
 
+<script src="config.js"></script>
 <script src="supabase.js"></script>
 <script>if(!window.supabase){document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2"><\/script>')}</script>
 <script>
 /* ---------- storage helpers (every call guarded) ---------- */
-/* ===== CONNECT TO SUPABASE: paste your two values here ===== */
-var SUPABASE_URL='https://czuelcaucmzgaosgufyq.supabase.co';
-var SUPABASE_ANON_KEY='sb_publishable_wTtiQl8Sd1dIcBMuNnFZbw_EGPaSRja';
-/* ============================================================ */
+/* Connection settings come from config.js. They are public values (the project address and the publishable key).
+   A browser can always see them. Security is enforced by Supabase (RLS, roles, two-step code), not by secrecy. */
+var NAMSA_CFG=window.NAMSA_CONFIG||{};
+var SUPABASE_URL=NAMSA_CFG.url||'';
+var SUPABASE_ANON_KEY=NAMSA_CFG.key||'';
 var sb=null;
-try{if(/^https:\/\//.test(SUPABASE_URL)&&window.supabase){sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}})}}catch(e){sb=null}
+try{if(/^https:\/\//.test(SUPABASE_URL)&&SUPABASE_ANON_KEY&&window.supabase){sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}})}}catch(e){sb=null}
 var LIVE=!!sb;
-var DEMO=!/^https:\/\//.test(SUPABASE_URL);   /* demo mode only when no database address is set */
-var CONFIG_ERR=!DEMO&&!LIVE;                  /* address set but the connection library did not load */
+var DEMO=NAMSA_CFG.demo===true;      /* local preview only: no admin area, nothing is sent anywhere */
+var CONFIG_ERR=!DEMO&&!LIVE;         /* not connected: requests and admin sign-in are switched off */
 var VIEWS={}, AFTER={};
 var LS={
   get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
@@ -445,6 +464,7 @@ var DEFAULTS={
     {id:'e7',name:'Name to be added',position:'Organizer',desc:'',photo:''}
   ],
   docs:{head:'Anim Emmanuel',secretary:'Victoria Efua Ainoo Morrison',treasurer:'',president:'The President, NAMSA-PU',patron:'The Patron, NAMSA-PU',controller:'The Financial Controller, NAMSA-PU',amounts:{funeral:500,naming:250,wedding:300}},
+  ads:{enabled:true,heading:'Advertisements',contact:'Want to advertise here? Please contact the NAMSA-PU Welfare Committee.',items:[]},
   letter:{to:'The Financial Controller, NAMSA',cc:'The General Secretary, NAMSA; The President, NAMSA',head:'Emmanuel Anim',sec:'Victoria Efua Ainoo Morrison'},
   committeeV:2,
   committee:[
@@ -532,6 +552,9 @@ function ensureShape(){
     if(!C.site||typeof C.site!=='object')C.site={};
     ['name','tagline','welcome','about'].forEach(function(k){if(typeof C.site[k]!=='string')C.site[k]=DEFAULTS.site[k]});
     if(!C.notify||typeof C.notify!=='object')C.notify={alertEmail:'',sendMemberEmails:true};
+    if(!C.ads||typeof C.ads!=='object')C.ads=clone(DEFAULTS.ads);
+    if(!Array.isArray(C.ads.items))C.ads.items=[];
+    C.ads.items=C.ads.items.filter(function(x){return x&&typeof x==='object'});
   }catch(e){}
 }
 function fixLetterDefaults(){
@@ -566,16 +589,26 @@ function saveC(){
   if(!LIVE){if(!LS.set('nw_content',C))toast('Could not save. Try a smaller photo.');return}
   clearTimeout(_sv);_sv=setTimeout(pushContent,500);
 }
+var _pushed={};
+function contentVal(k){var v=C[k];if(k==='notify')v={sendMemberEmails:!!(C.notify&&C.notify.sendMemberEmails),whatsappAuto:!!(C.notify&&C.notify.whatsappAuto)};return v}
 async function pushContent(){
   if(!SESSION||!SESSION.ok2)return;
-  var rows=Object.keys(C).map(function(k){var val=C[k];if(k==='notify')val={sendMemberEmails:!!(C.notify&&C.notify.sendMemberEmails),whatsappAuto:!!(C.notify&&C.notify.whatsappAuto)};return {key:k,value:val,updated_at:new Date().toISOString()}});
-  var r=await sb.from('site_content').upsert(rows);
-  if(r.error)toast('Could not save to the website: '+r.error.message);
+  var rows=[];
+  Object.keys(C).forEach(function(k){var v=contentVal(k),j=JSON.stringify(v);if(_pushed[k]!==j)rows.push({key:k,value:v,_j:j})});
+  if(!rows.length)return;
+  var res=await sb.from('site_content').upsert(rows.map(function(x){return {key:x.key,value:x.value}}));
+  if(res.error){toast(errMsg(res.error));return}
+  rows.forEach(function(x){_pushed[x.key]=x._j});
 }
 function saveR(){if(!LIVE)LS.set('nw_reports',REPORTS)}
 function logit(who,action){
-  if(LIVE){if(SESSION){sb.from('activity_log').insert({who:who,action:action}).then(function(){})}return}
+  if(LIVE)return;   /* live site: the database writes the audit log itself */
   LOG.unshift({t:Date.now(),who:who,action:action});LOG=LOG.slice(0,300);LS.set('nw_log',LOG)}
+function uilog(action){
+  if(LIVE){if(SESSION&&SESSION.ok2){sb.rpc('log_event',{p_action:action}).then(function(){},function(){})}return}
+  logit(SESSION?SESSION.name:'System',action);
+}
+function errMsg(e){var m=String((e&&e.message)||'');var i=m.indexOf('USER:');return i>=0?m.slice(i+5).trim().slice(0,160):'Something went wrong. Please try again.'}
 
 /* ---------- session (demo admin) ---------- */
 var SESSION=null, idleT=null;
@@ -608,14 +641,14 @@ function heroArt(){
 function drawNav(){
   var r=route();
   var h=NAV.map(function(n){return '<a href="#/'+n[0]+'"'+(r===n[0]?' class="active" aria-current="page"':'')+'>'+esc(n[1])+'</a>'}).join('');
-  h+='<a class="cta alt" href="#/report?issue">Report an issue</a><a class="cta" href="#/report">Request support</a><a class="adm" href="#/admin"'+(r==='admin'?' aria-current="page"':'')+'>Admin</a>';
+  h+='<a class="cta alt" href="#/report?issue">Report an issue</a><a class="cta" href="#/report">Request support</a>';
   $('nav').innerHTML=h;
   $('nav').classList.remove('open');$('menuBtn').setAttribute('aria-expanded','false');
   $('brandName').textContent=C.site.name;
 }
 function drawFoot(){
   var c=C.contact;
-  $('foot').innerHTML='<p><b>'+esc(C.site.name)+'</b><br>Phone: '+c.phones.map(function(n){return phoneLink(n)}).join(' &middot; ')+'<br>Email: <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a></p><p><a href="#/gallery">Gallery</a> &middot; <a href="#/privacy">Privacy policy</a> &middot; <a href="#/admin">Admin sign in</a></p>';
+  $('foot').innerHTML='<p><b>'+esc(C.site.name)+'</b><br>Phone: '+c.phones.map(function(n){return phoneLink(n)}).join(' &middot; ')+'<br>Email: <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a></p><p><a href="#/gallery">Gallery</a> &middot; <a href="#/privacy">Privacy policy</a> <a class="staffdot" href="#/admin" aria-label="Staff sign in"></a></p>';
 }
 function render(){
   applyBrand();drawNav();drawFoot();
@@ -650,6 +683,7 @@ VIEWS.home=function(){
   +'<section class="blk" style="padding-top:0"><div class="wrap"><h2>How to get support</h2><ol class="steps">'+C.steps.map(function(x){return '<li><span><b>'+esc(x.h)+'</b> '+esc(x.p)+'</span></li>'}).join('')+'</ol></div></section>'
   +'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Current executives</h2><a href="#/executives">See all</a></div><div class="grid ppl">'+C.executives.slice(0,4).map(person).join('')+'</div></div></section>'
   +(C.gallery.length?'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Moments</h2><a href="#/gallery">See all</a></div>'+galleryGrid(C.gallery.slice(0,8),true)+'</div></section>':'')
+  +adsSection()
   +'<section class="blk" style="padding-top:0"><div class="wrap"><h2>Contact the committee</h2><div class="card">'+contactBlock()+'</div></div></section>';
 };
 function contactBlock(){
@@ -780,6 +814,7 @@ function submitReport(e){
   if(!v('ds'))err.push('Describe the situation.');
   var files=[],raw=[];
   var fl=$('fl');
+  if(fl&&fl.files&&fl.files.length>3)err.push('You can attach up to 3 files.');
   if(fl&&fl.files){for(var i=0;i<fl.files.length;i++){var f=fl.files[i];
     if(f.size>MAX_BYTES){err.push(sizeMsg(f))}
     else if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){err.push(f.name+' is not a PDF, JPG or PNG.')}
@@ -847,7 +882,10 @@ function randToken(){var a=new Uint8Array(16);try{crypto.getRandomValues(a)}catc
 function msgFiles(m,admin){
   var fl=m.files||[];if(!fl.length)return '';
   return '<div class="flex" style="margin-top:6px">'+fl.map(function(f){
-    if(f.url)return '<a class="btn ghost small" href="'+esc(safeUrl(f.url))+'" target="_blank" rel="noopener noreferrer">'+esc(f.name)+'</a>';
+    if(f.fid&&LIVE){
+      if(admin)return '<button class="btn ghost small" onclick="openStaffFile(\''+esc(f.fid)+'\')">'+esc(f.name)+'</button>';
+      if(m.from==='Committee')return '<button class="btn ghost small" onclick="downloadMemberFile(\''+esc(f.fid)+'\')">'+esc(f.name)+'</button>';
+    }
     if(admin&&LIVE&&f.path)return '<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>';
     return '<span class="badge">'+esc(f.name)+'</span>';
   }).join('')+'</div>';
@@ -860,18 +898,12 @@ async function memberReply(ref){
   if(LIVE){
     try{
       toast('Sending...');
-      var files=[];
-      for(var i=0;i<vf.files.length;i++){
-        var f=vf.files[i],path='reply/'+safeName(ref)+'/'+randToken()+'_'+safeName(f.name);
-        var up=await sb.storage.from('attachments').upload(path,f,{contentType:f.type||'application/octet-stream'});
-        if(up.error)throw up.error;
-        files.push({name:f.name,size:f.size,path:path});
-      }
-      var res=await sb.rpc('member_reply',{p_ref:ref,p_last4:state.track4||'',p_text:t,p_files:files});
+      var packed=await packFiles(vf.files);
+      var res=await sb.rpc('member_reply',{p_ref:ref,p_last4:state.track4||'',p_text:t,p_files:packed});
       if(res.error||!res.data)throw (res.error||new Error('failed'));
       toast('Reply sent');
       var r2=await liveTrack(ref,state.track4);if(r2)drawTrack(r2);
-    }catch(err){toast('Could not send your reply. Please try again.')}
+    }catch(err){toast(errMsg(err))}
     return;
   }
   var r=REPORTS.filter(function(x){return x.ref===ref})[0];if(!r)return;
@@ -933,7 +965,7 @@ async function startMfa(){
       var all=(f.data&&f.data.all)||[];
       for(var i=0;i<all.length;i++){if(all[i].status==='unverified'){await sb.auth.mfa.unenroll({factorId:all[i].id})}}
       var e=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'NAMSA admin '+Date.now()});
-      state.mfa=e.error?{mode:'error',msg:'Could not start two-step setup: '+e.error.message}:{mode:'enroll',factorId:e.data.id,qr:e.data.totp.qr_code,secret:e.data.totp.secret};
+      state.mfa=e.error?{mode:'error',msg:'Could not start two-step setup. Please try again.'}:{mode:'enroll',factorId:e.data.id,qr:e.data.totp.qr_code,secret:e.data.totp.secret};
     }
   }catch(err){state.mfa={mode:'error',msg:'Could not start the two-step check. Please try again.'}}
   render();
@@ -946,7 +978,7 @@ async function doMfa(e){
 }
 async function finishLogin(){
   state.mfa=null;SESSION.ok2=true;bumpIdle();
-  logit(SESSION.name,'Signed in with two-step check.');
+  uilog('Signed in with the two-step code.');
   state.adminTab=(SESSION.role==='content')?'people':'reports';
   if(SESSION.role!=='content')await loadReports();
   render();
@@ -963,7 +995,7 @@ async function restoreSession(){
 async function loadContent(){
   var r=await sb.from('site_content').select('key,value');
   if(r.error||!r.data)return;
-  var has={};r.data.forEach(function(row){C[row.key]=row.value;has[row.key]=1});
+  var has={};r.data.forEach(function(row){C[row.key]=row.value;has[row.key]=1;_pushed[row.key]=JSON.stringify(row.key==='notify'?{sendMemberEmails:!!(row.value&&row.value.sendMemberEmails),whatsappAuto:!!(row.value&&row.value.whatsappAuto)}:row.value)});
   if(!has.committeeV){C.committeeV=1}
   if(!has.members){C.members=null}
   migrateCommittee();
@@ -980,22 +1012,35 @@ function fromRow(x){return {id:x.id,ref:x.ref,created:new Date(x.created_at).get
 var _lastLoad=0,_lastLog=0;
 async function loadReports(){
   var r=await sb.from('reports').select('*').order('created_at',{ascending:false});
-  if(r.error){toast('Could not load requests: '+r.error.message);return}
+  if(r.error){toast(errMsg(r.error));return}
   REPORTS=r.data.map(fromRow);_lastLoad=Date.now();
+  loadTemplates();
 }
 async function loadLog(){
   var r=await sb.from('activity_log').select('*').order('created_at',{ascending:false}).limit(300);
   if(!r.error){LOG=r.data.map(function(x){return {t:new Date(x.created_at).getTime(),who:x.who,action:x.action}});_lastLog=Date.now()}
 }
-function syncPayload(r){
-  var o={status:r.status,history:r.history,messages:r.messages,notes:r.notes};
-  if(r.approved_amount!=null)o.approved_amount=r.approved_amount;
-  if(r.disbursed_amount!=null)o.disbursed_amount=r.disbursed_amount;
-  return o;
+async function applyOp(r,op){
+  var res=await sb.rpc('staff_apply',{p_ref:r.ref,p_op:op});
+  if(res.error||!res.data){toast(errMsg(res.error));return false}
+  var n=fromRow(res.data);Object.keys(n).forEach(function(k){r[k]=n[k]});_lastLoad=Date.now();return true;
 }
-function syncReport(r){
-  if(!LIVE)return;_lastLoad=Date.now();
-  sb.from('reports').update(syncPayload(r)).eq('id',r.id).then(function(res){if(res.error)toast('Could not save the change: '+res.error.message)});
+async function opStatus(r,s){
+  if(LIVE)return applyOp(r,{type:'status',status:s});
+  r.status=s;r.history.push({t:Date.now(),status:s,by:SESSION.name});saveR();return true;
+}
+async function opNote(r,kind,text){
+  if(LIVE)return applyOp(r,{type:'note',kind:kind,text:text});
+  var n={by:SESSION.name,text:text,t:Date.now()};if(kind!=='note')n.kind=kind;r.notes.push(n);saveR();return true;
+}
+async function opMessage(r,text,files,letter){
+  if(LIVE){var op={type:'message',text:text,files:files||[]};if(letter)op.letter=letter;return applyOp(r,op)}
+  var m={from:'Committee',by:SESSION.name,text:text,files:files||[],t:Date.now()};if(letter)m.letter=letter;r.messages.push(m);saveR();return true;
+}
+async function opAmounts(r,ap,di){
+  var op={type:'amounts'};if(ap!=null)op.approved=ap;if(di!=null)op.disbursed=di;
+  if(LIVE)return applyOp(r,op);
+  if(ap!=null)r.approved_amount=ap;if(di!=null)r.disbursed_amount=di;saveR();return true;
 }
 async function refreshReports(){await loadReports();render();toast('Updated')}
 AFTER.admin=function(){
@@ -1004,6 +1049,31 @@ AFTER.admin=function(){
   if(state.adminTab==='log'&&Date.now()-_lastLog>15000){loadLog().then(function(){if(route()==='admin')render()})}
   if((state.adminTab==='dochist'||state.openReport)&&Date.now()-_lastDocs>15000){loadDocs().then(function(){if(route()==='admin'&&!document.querySelector('.lt'))render()})}
 };
+
+function readB64(file){return new Promise(function(res,rej){var rd=new FileReader();rd.onload=function(){var s=String(rd.result),i=s.indexOf(',');res(i>=0?s.slice(i+1):'')};rd.onerror=function(){rej(new Error('read'))};rd.readAsDataURL(file)})}
+function mimeOf(f){var n=String(f.name).toLowerCase();return /\.pdf$/.test(n)?'application/pdf':(/\.png$/.test(n)?'image/png':'image/jpeg')}
+async function packFiles(list){
+  var out=[];
+  for(var i=0;i<list.length;i++){
+    if(list[i].size>MAX_BYTES)throw new Error('USER:'+sizeMsg(list[i]));
+    out.push({name:list[i].name,mime:mimeOf(list[i]),data:await readB64(list[i])});
+  }
+  return out;
+}
+function saveB64(name,mime,b64){
+  var bin=atob(b64),u8=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:mime}));a.download=name||'document';document.body.appendChild(a);a.click();a.remove();
+}
+async function openStaffFile(fid){
+  var r=await sb.from('member_files').select('name,mime,data_b64').eq('id',fid).maybeSingle();
+  if(r.error||!r.data){toast('Could not open the file.');return}
+  saveB64(r.data.name,r.data.mime,r.data.data_b64);
+}
+async function downloadMemberFile(fid){
+  var res=await sb.rpc('get_member_file',{p_ref:state.trackRef,p_last4:state.track4||'',p_fid:fid});
+  if(res.error||!res.data){toast('Could not open that file.');return}
+  saveB64(res.data.name,res.data.mime,res.data.data);
+}
 function openFile(path){
   var w=window.open('','_blank');
   sb.storage.from('attachments').createSignedUrl(path,300).then(function(r){if(r.data&&w){w.location=r.data.signedUrl}else{if(w)w.close();toast('Could not open the file')}});
@@ -1014,7 +1084,7 @@ function exportCSV(){
   var rows=REPORTS.map(function(r){return [r.ref,fmt(r.created),r.category,r.sub,r.status,r.name,r.sid,r.phone,r.email,r.programme,r.level,r.amount,r.desc,r.approved_amount,r.disbursed_amount].map(q).join(',')});
   var csv='\ufeff'+cols.map(q).join(',')+'\n'+rows.join('\n');
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='namsa-welfare-requests.csv';document.body.appendChild(a);a.click();a.remove();
-  logit(SESSION.name,'Downloaded the requests spreadsheet.');
+  uilog('Downloaded the requests spreadsheet.');
 }
 function dataToBlob(u){var a=u.split(','),m=a[0].match(/:(.*?);/)[1],b=atob(a[1]),n=b.length,u8=new Uint8Array(n);while(n--)u8[n]=b.charCodeAt(n);return new Blob([u8],{type:m})}
 async function storeImg(dataUrl){
@@ -1022,7 +1092,7 @@ async function storeImg(dataUrl){
   var blob=dataToBlob(dataUrl),ext=blob.type==='image/png'?'png':'jpg';
   var path=uid()+Date.now().toString(36)+'.'+ext;
   var up=await sb.storage.from('site-media').upload(path,blob,{contentType:blob.type,cacheControl:'31536000'});
-  if(up.error){toast('Upload failed: '+up.error.message);return null}
+  if(up.error){toast('Upload failed. Pictures must be 200 KB or smaller.');return null}
   return sb.storage.from('site-media').getPublicUrl(path).data.publicUrl;
 }
 async function liveTrack(ref,p4){
@@ -1033,23 +1103,15 @@ async function liveTrack(ref,p4){
 }
 async function submitLive(k,anon,v,files,raw,btn){
   try{
-    var folder='u'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-    for(var i=0;i<raw.length;i++){
-      if(raw[i].size>MAX_BYTES)throw new Error(sizeMsg(raw[i]));
-      var safe=raw[i].name.replace(/[^A-Za-z0-9._-]/g,'_');
-      var path=folder+'/'+i+'_'+safe;
-      var up=await sb.storage.from('attachments').upload(path,raw[i],{contentType:raw[i].type||'application/octet-stream'});
-      if(up.error)throw up.error;
-      files[i].path=path;
-    }
-    var payload={category:k.label,sub:v('sub'),emergency:!!k.emergency,anon:!!anon,name:anon?'Anonymous':v('fn'),sid:v('sid'),phone:v('ph'),email:v('em'),programme:v('pg'),level:v('lv'),contact:v('cm'),descr:v('ds'),amount:v('am'),files:files};
+    var packed=await packFiles(raw);
+    var payload={category:k.label,sub:v('sub'),emergency:!!k.emergency,anon:!!anon,name:anon?'Anonymous':v('fn'),sid:v('sid'),phone:v('ph'),email:v('em'),programme:v('pg'),level:v('lv'),contact:v('cm'),descr:v('ds'),amount:v('am'),files:packed};
     var r=await sb.rpc('submit_report',{payload:payload});
     if(r.error)throw r.error;
     var d=r.data;
     state.done={ref:d.ref,created:new Date(d.created_at).getTime(),category:k.label,sub:v('sub'),emergency:!!k.emergency,anon:!!anon,email:v('em'),status:d.status};
     state.cat=null;state.anon=false;render();
   }catch(err){
-    var el=$('ferr');if(el){el.textContent='Sorry, we could not send your request ('+(err.message||'please try again')+'). If it is urgent, call the emergency number.'}
+    var el=$('ferr');if(el){el.textContent='Sorry, we could not send your request. '+errMsg(err)+' If it is urgent, call the emergency number.'}
     if(btn){btn.disabled=false;btn.textContent='Submit request'}
   }
 }
@@ -1060,14 +1122,12 @@ VIEWS.admin=function(){
   if(LIVE&&SESSION&&!SESSION.ok2)return mfaView();
   if(!SESSION){
     if(LIVE)return liveLoginView();
-    return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Committee sign in</h1><div class="note">Prototype sign in. In the real site this uses each administrator\'s own email, a strong password and a two-step code.</div>'
-    +'<form onsubmit="return doLogin(event)"><label for="role">Sign in as</label><select id="role"><option value="super">Super Administrator</option><option value="welfare">Welfare Administrator</option><option value="content">Content Administrator</option></select>'
-    +'<label for="pin">Demo PIN</label><input type="password" id="pin" inputmode="numeric" placeholder="Enter PIN"><p id="lerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Sign in</button></form></div></section>';
+    return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Admin</h1><p>Admin sign-in is only available on the connected website.</p></div></section>';
   }
   var role=SESSION.role;
   var tabs=[];
-  if(role==='super'||role==='welfare'){tabs.push(['reports','Requests'],['stats','Welfare statistics'],['dochist','AI document history'])}
-  if(role==='super'||role==='content'){tabs.push(['people','Executives and committee leaders'],['members','Welfare members'],['pages','Pages'],['gallery','Pictures'],['appearance','Logo and colours'],['contact','Contact details'])}
+  if(role==='super'||role==='welfare'){tabs.push(['reports','Requests'],['stats','Welfare statistics'],['dochist','Document history'],['letters','Letter templates'])}
+  if(role==='super'||role==='content'){tabs.push(['people','Executives and committee leaders'],['members','Welfare members'],['pages','Pages'],['gallery','Pictures'],['ads','Advertisements'],['appearance','Logo and colours'],['contact','Contact details'])}
   if(role==='super'){tabs.push(['settings','Categories and alerts'])}
   if(role==='super'||role==='welfare'){tabs.push(['log','Activity'])}
   if(role==='super'){tabs.push(['backup','Backup'])}
@@ -1077,13 +1137,7 @@ VIEWS.admin=function(){
   h+=safeTab();
   return h+'</div></section>';
 };
-function doLogin(e){
-  e.preventDefault();
-  if(!DEMO)return false;
-  if($('pin').value!=='1515'){$('lerr').textContent='Wrong PIN. Try again.';return false}
-  SESSION={role:$('role').value,name:ROLES[$('role').value]};
-  logit(SESSION.name,'Signed in (demo).');state.adminTab='reports';render();return false;
-}
+function doLogin(e){e.preventDefault();return false}
 var ADMIN={};
 
 ADMIN.reports=function(){
@@ -1120,7 +1174,7 @@ function reportDetail(ref){
   +(r.amount?'<p><b>Amount requested:</b> GHS '+esc(r.amount)+'</p>':'')
   +'<p><b>Approved amount:</b> '+approvedLine(r)+'</p>'
   +'<p><b>Situation:</b><br>'+esc(r.desc).replace(/\n/g,'<br>')+'</p>'
-  +'<p style="margin:0"><b>Attachments:</b> '+(r.files.length?'<span class="flex">'+r.files.map(function(f){return (LIVE&&f.path)?'<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>':esc(f.name)+' ('+Math.round(f.size/1024)+' KB)'}).join('')+'</span>':'None')+'</p></div>';
+  +'<p style="margin:0"><b>Attachments:</b> '+(r.files.length?'<span class="flex">'+r.files.map(function(f){return (LIVE&&f.fid)?'<button class="btn ghost small" onclick="openStaffFile(\''+esc(f.fid)+'\')">'+esc(f.name)+'</button>':((LIVE&&f.path)?'<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>':esc(f.name)+' ('+Math.round(f.size/1024)+' KB)')}).join('')+'</span>':'None')+'</p></div>';
   h+='<h3 style="margin-top:22px">Change status</h3><div class="flex"><select id="ns" style="max-width:280px">'+STATUSES.map(function(s){return '<option'+(r.status===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select><button class="btn dark small" onclick="setStatus(\''+r.ref+'\')">Update status</button></div>';
   h+=docsPanel(r);
   h+='<h3 style="margin-top:22px">Conversation with member</h3>'+(r.messages.length?r.messages.map(function(m,mi){return '<div class="msg '+(m.from==='Committee'?'c':'m')+'"><small>'+esc(m.from)+(m.by?' ('+esc(m.by)+')':'')+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+msgFiles(m,true)+msgLetter(m,mi,true)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>')
@@ -1135,8 +1189,9 @@ function reportDetail(ref){
 /* ---------- letter to Financial Controller ---------- */
 function letterEvidenceList(r){
   var ev=[];
-  (r.files||[]).forEach(function(f){ev.push({name:f.name,path:f.path||'',isImage:/\.(jpe?g|png)$/i.test(f.name)})});
-  (r.messages||[]).forEach(function(m){if(m.from==='Member')(m.files||[]).forEach(function(f){ev.push({name:f.name,path:f.path||'',isImage:/\.(jpe?g|png)$/i.test(f.name)})})});
+  function add(f){ev.push({name:f.name,path:f.path||'',fid:f.fid||'',isImage:/\.(jpe?g|png)$/i.test(f.name)})}
+  (r.files||[]).forEach(add);
+  (r.messages||[]).forEach(function(m){if(m.from==='Member')(m.files||[]).forEach(add)});
   return ev;
 }
 function buildLetterBody(r){
@@ -1154,11 +1209,11 @@ function buildLetterBody(r){
 async function openLetter(ref){
   var r=getR(ref);if(!r)return;
   var L=C.letter||{},ev=letterEvidenceList(r);
-  if(LIVE){for(var i=0;i<ev.length;i++){if(ev[i].isImage&&ev[i].path){var sg=await sb.storage.from('attachments').createSignedUrl(ev[i].path,3600);if(sg.data)ev[i].url=sg.data.signedUrl}}}
+  if(LIVE){for(var i=0;i<ev.length;i++){if(!ev[i].isImage)continue;if(ev[i].fid){var q=await sb.from('member_files').select('mime,data_b64').eq('id',ev[i].fid).maybeSingle();if(q.data)ev[i].url='data:'+q.data.mime+';base64,'+q.data.data_b64}else if(ev[i].path){var sg=await sb.storage.from('attachments').createSignedUrl(ev[i].path,3600);if(sg.data)ev[i].url=sg.data.signedUrl}}}
   state.letter={ref:ref,to:L.to||'',cc:L.cc||'',head:L.head||'',sec:L.sec||'',date:fmtDay(Date.now()),
     subject:'REQUEST FOR '+String(r.category).toUpperCase()+' SUPPORT: '+(r.anon?'ANONYMOUS MEMBER':String(r.name).toUpperCase())+' ('+r.ref+')',
     body:buildLetterBody(r),ev:ev};
-  logit(SESSION.name,'Prepared a letter for '+ref+'.');
+  uilog('Prepared a letter for '+ref+'.');
   drawLetter();
 }
 function letterSheet(forWord){
@@ -1177,8 +1232,8 @@ function letterSheet(forWord){
     if(!forWord)ev+=l.ev.filter(function(e){return e.url}).map(function(e){return '<div style="margin:8px 0;page-break-inside:avoid"><img src="'+esc(e.url)+'" alt="'+esc(e.name)+'" style="max-width:100%;max-height:9cm;border:1px solid #999"><br><small>'+esc(e.name)+'</small></div>'}).join('');
   }
   var sign='<p style="margin:18px 0 6px">Yours faithfully,</p>'
-    +'<div style="margin-top:26px"><div style="border-bottom:1px solid #000;height:40px;width:260px"></div><b>'+esc(l.head||'')+'</b><br>Welfare Committee Head</div>'
-    +'<div style="margin-top:26px"><div style="border-bottom:1px solid #000;height:40px;width:260px"></div><b>'+(l.sec?esc(l.sec):'&nbsp;')+'</b><br>Welfare Secretary</div>';
+    +'<div style="margin-top:34px;page-break-inside:avoid"><div style="border-bottom:1px solid #000;height:88px;width:300px"></div><b>'+esc(l.head||'')+'</b><br>Welfare Committee Head</div>'
+    +'<div style="margin-top:34px;page-break-inside:avoid"><div style="border-bottom:1px solid #000;height:88px;width:300px"></div><b>'+(l.sec?esc(l.sec):'&nbsp;')+'</b><br>Welfare Secretary</div>';
   return head+meta+paras+tbl+ev+sign;
 }
 function drawLetter(){
@@ -1234,8 +1289,8 @@ async function deleteReports(refs){
       (r.files||[]).forEach(function(f){if(f.path)att.push(f.path)});
       (r.messages||[]).forEach(function(m){(m.files||[]).forEach(function(f){if(f.path){(m.from==='Committee'?docs:att).push(f.path)}})});
       try{if(att.length)await sb.storage.from('attachments').remove(att);if(docs.length)await sb.storage.from('member-docs').remove(docs)}catch(e){}
-      var d=await sb.from('reports').delete().eq('id',r.id).select('id');
-      if(d.error||!d.data||!d.data.length){toast('Could not delete '+r.ref+(d.error?': '+d.error.message:'. You may not have permission.'));continue}
+      var d=await sb.rpc('staff_delete_reports',{p_refs:[r.ref]});
+      if(d.error||!d.data){toast(d.error?errMsg(d.error):'Could not delete '+r.ref+'.');continue}
     }
     REPORTS=REPORTS.filter(function(x){return x.ref!==r.ref});DOCS=DOCS.filter(function(d){return d.ref!==r.ref});if(!LIVE)LS.set('nw_docs',DOCS);delete state.sel[r.ref];done++;
     logit(SESSION.name,'Deleted request '+r.ref+'.');
@@ -1244,7 +1299,7 @@ async function deleteReports(refs){
   state.openReport=null;
   toast(done+' request'+(done===1?'':'s')+' deleted');render();
 }
-/* ================= WELFARE DOCUMENTS (AI) ================= */
+/* ================= WELFARE DOCUMENTS (built-in templates) ================= */
 var ORG={l1:'Nurses and Midwives Students’ Association (NAMSA-PU)',l2:'Pentecost University',l3:'WELFARE COMMITTEE'};
 var KIND_LABEL={funeral:'Funeral',naming:'Naming Ceremony',wedding:'Wedding',general:'General Welfare',financial:'Financial Support',medical:'Medical Welfare',emergency:'Emergency Support',other:'Other',issue:'Welfare Issue'};
 var KINDS=['funeral','naming','wedding','general','financial','medical','emergency','other'];
@@ -1311,7 +1366,105 @@ function relationOf(r){
   for(var i=0;i<map.length;i++){if(map[i][0].test(d))return map[i][1]}
   return 'family member';
 }
-function purposePhrase(d,second){
+
+/* ---------- built-in letter templates (editable in Admin > Letter templates) ---------- */
+var TPL_DEFAULT={
+  intro_funeral:'The Welfare Committee extends its heartfelt condolences to you and your family on the passing of your {{relationship}}. May the soul of the departed rest in perfect peace, and may you and your family find comfort and strength in this difficult time.',
+  intro_naming:'The Welfare Committee warmly congratulates you and your family on your naming ceremony. May the child grow in health, wisdom and joy.',
+  intro_wedding:'The Welfare Committee warmly congratulates you on your wedding. We wish you a happy and blessed life together.',
+  intro_general:'',intro_financial:'',intro_medical:'',intro_emergency:'',intro_other:'',
+  purpose3_funeral:'the funeral of the applicant\u2019s {{relationship}}',
+  purpose2_funeral:'the funeral of your {{relationship}}',
+  purpose3_naming:'a naming ceremony',purpose2_naming:'your naming ceremony',
+  purpose3_wedding:'a wedding',purpose2_wedding:'your wedding',
+  purpose3_other:'{{categoryLower}}{{subParen}}',purpose2_other:'{{categoryLower}}{{subParen}}',
+  accept_subject:'ACCEPTANCE OF WELFARE SUPPORT: {{categoryUpper}}',
+  accept_approval:'On behalf of the Welfare Committee of the Nurses and Midwives Students\u2019 Association (NAMSA-PU), Pentecost University, we are pleased to inform you that your application for welfare support towards {{purpose2}} (reference {{ref}}) has been approved.',
+  accept_amount:'The approved amount is {{amountLine}}.',
+  accept_close:'We trust that this support will be of help to you. The Welfare Committee remains committed to standing with every member of the association in times of need. Please do not hesitate to contact the Committee should you require any further assistance.',
+  deadline:'Please note the following deadline: {{deadline}}.',
+  reason:'The applicant has requested welfare support towards {{purpose3}}.',
+  release_subject:'REQUEST FOR RELEASE OF WELFARE SUPPORT FUNDS: {{nameUpper}}{{idParen}}',
+  release_intro:'The Welfare Committee has reviewed and approved the application of {{name}} (Student ID: {{studentId}}), a {{levelProg}} student, for welfare support towards {{purpose3}}.',
+  release_request:'The approved amount is {{amountLine}}. We therefore respectfully request the release of the approved funds so that the Welfare Committee can disburse the support to the member.',
+  release_close:'The Welfare Committee sincerely appreciates the continued support of the leadership towards the welfare of members. We respectfully encourage the leadership to keep supporting members in their times of need, and we remain committed to maintaining and strengthening effective coordination and collaboration with the leadership.',
+  ack_statement:'I, {{name}}, hereby acknowledge that I have received the approved welfare support of {{amountLine}} in full from the Welfare Committee of the Nurses and Midwives Students\u2019 Association (NAMSA-PU), Pentecost University.',
+  wa_message:'Dear {{name}}, {{sympathy}}the NAMSA-PU Welfare Committee is pleased to inform you that your welfare application ({{ref}}) has been approved{{amountPhrase}}. {{letterPhrase}}To view it, open {{siteUrl}} , tap Track My Report, and enter your tracking code and the last 4 digits of this phone number.'
+};
+var TPL=(function(){var o={};for(var k in TPL_DEFAULT)o[k]=TPL_DEFAULT[k];return o})();
+var TPL_META=[
+  ['Opening message of the acceptance letter, by type of support',[
+    ['intro_funeral','Funeral (condolence)'],['intro_naming','Naming ceremony'],['intro_wedding','Wedding'],
+    ['intro_general','General welfare support'],['intro_financial','Financial support'],['intro_medical','Medical welfare'],['intro_emergency','Emergency support'],['intro_other','Other']]],
+  ['What the support is for (used inside the letters)',[
+    ['purpose3_funeral','Funeral, written about the applicant'],['purpose2_funeral','Funeral, written to the applicant'],
+    ['purpose3_naming','Naming ceremony, about the applicant'],['purpose2_naming','Naming ceremony, to the applicant'],
+    ['purpose3_wedding','Wedding, about the applicant'],['purpose2_wedding','Wedding, to the applicant'],
+    ['purpose3_other','All other types, about the applicant'],['purpose2_other','All other types, to the applicant']]],
+  ['Acceptance letter (sent to the applicant)',[
+    ['accept_subject','Subject line'],['accept_approval','Approval paragraph'],['accept_amount','Amount sentence'],['accept_close','Closing message'],['deadline','Deadline sentence (only shown when you type a deadline)']]],
+  ['Request for release of funds (to the President)',[
+    ['release_subject','Subject line'],['release_intro','Opening paragraph'],['reason','Reason sentence'],['release_request','Request paragraph'],['release_close','Closing paragraph']]],
+  ['Disbursement and acknowledgement form',[['ack_statement','Acknowledgement statement']]],
+  ['WhatsApp message to the applicant after approval',[['wa_message','Message text']]]
+];
+function tplGet(key,kind){var k2=key+'__'+kind;if(TPL[k2]!=null)return TPL[k2];return TPL[key]!=null?TPL[key]:''}
+function tplFill(str,v){return String(str==null?'':str).replace(/\{\{(\w+)\}\}/g,function(m,k){return Object.prototype.hasOwnProperty.call(v,k)?String(v[k]):m})}
+function baseVars(d){
+  var f=d.fields||{},a=Number(f.amount)>0,lv=(d.level?'Level '+d.level+' ':'')+(d.programme||'');
+  return {name:d.applicant||'',nameUpper:String(d.applicant||'').toUpperCase(),studentId:d.sid||'',programme:d.programme||'',level:d.level||'',levelProg:lv,
+    category:d.category||'',categoryUpper:String(KIND_LABEL[d.kind]||d.category||'').toUpperCase(),categoryLower:String(d.category||'welfare support').toLowerCase(),
+    relationship:d.rel||'family member',ref:d.ref||'',date:f.date||'',deadline:f.deadline||'',
+    amount:a?money(f.amount):'',amountWords:a?amountWords(f.amount):'',amountLine:a?moneyLine(f.amount):'GH\u20B5 ______________',
+    idParen:d.sid?' ('+d.sid+')':'',subParen:d.sub?' ('+String(d.sub).toLowerCase()+')':'',siteUrl:siteUrl()};
+}
+function tplPurpose(d,second){
+  var k=(d.kind==='funeral'||d.kind==='naming'||d.kind==='wedding')?d.kind:'other';
+  return tplFill(TPL['purpose'+(second?2:3)+'_'+k],baseVars(d));
+}
+function tplVars(d){var v=baseVars(d);v.purpose2=tplPurpose(d,true);v.purpose3=tplPurpose(d,false);return v}
+function tpl(key,d){return tplFill(tplGet(key,d.kind),tplVars(d))}
+async function loadTemplates(){
+  if(!LIVE){var s0=LS.get('nw_tpl',null);if(s0)Object.keys(s0).forEach(function(k){if(typeof s0[k]==='string'&&TPL_DEFAULT.hasOwnProperty(k))TPL[k]=s0[k]});return}
+  var r=await sb.from('letter_templates').select('key,value');
+  if(r.error||!r.data)return;
+  r.data.forEach(function(x){if(typeof x.value==='string'&&TPL_DEFAULT.hasOwnProperty(x.key))TPL[x.key]=x.value});
+}
+async function saveTpl(key,val){
+  if(!TPL_DEFAULT.hasOwnProperty(key))return;
+  val=String(val).slice(0,5000);TPL[key]=val;
+  if(!LIVE){var s1=LS.get('nw_tpl',{});s1[key]=val;LS.set('nw_tpl',s1);toast('Saved');return}
+  var r=await sb.from('letter_templates').upsert({key:key,value:val});
+  toast(r.error?errMsg(r.error):'Saved');
+}
+function resetTpl(key){saveTpl(key,TPL_DEFAULT[key]).then(function(){render()})}
+function previewTemplates(kind){
+  kind=kind||'funeral';
+  var r={name:'Ama Mensah',sid:'PU1234567',programme:'BSN Nursing',level:'300',ref:'NAMSA-ABCD-2345-WXYZ',
+    category:kind==='naming'?'Naming Ceremony':(kind==='wedding'?'Wedding':'Funeral'),sub:kind==='funeral'?'Father':'',desc:'please i need support for my dad funeral'};
+  var rel=relationOf(r),fx=fixedAmount(kind);
+  var d={kind:kind,rel:rel,applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub,ref:r.ref,
+    fields:{amount:String(fx||500),date:fmtDay(Date.now()),deadline:'',treasurer:'',method:'',txn:'',remarks:'',disbursed:''},bodies:templateBodies(r,kind,rel)};
+  var old=document.querySelector('.lt');if(old)old.remove();
+  var el=document.createElement('div');el.className='lt';el.setAttribute('role','dialog');el.setAttribute('aria-label','Template preview');
+  el.innerHTML='<div class="noprint" style="max-width:794px;margin:0 auto"><div class="flex spread"><h2 style="margin:0">Template preview</h2><button class="btn ghost small" onclick="closeLetter()">Close</button></div><p class="hint">Sample data only. Showing: <select id="pvk" onchange="previewTemplates(this.value)" style="width:auto;min-height:40px"><option value="funeral"'+(kind==='funeral'?' selected':'')+'>Funeral</option><option value="naming"'+(kind==='naming'?' selected':'')+'>Naming ceremony</option><option value="wedding"'+(kind==='wedding'?' selected':'')+'>Wedding</option></select></p></div>'+docSheets(d,false);
+  document.body.appendChild(el);
+}
+ADMIN.letters=function(){
+  var h='<h2>Letter templates</h2><p class="hint">The three welfare documents are written from these templates, so every letter has the same professional structure. Edit any text and it is saved straight away. Words inside double curly brackets, like {{name}}, are filled in automatically from the application. Use <b>Reset</b> to go back to the original wording.</p>';
+  h+='<div class="note"><b>Available fillers:</b> {{name}} {{nameUpper}} {{studentId}} {{programme}} {{level}} {{levelProg}} {{category}} {{categoryUpper}} {{categoryLower}} {{relationship}} {{ref}} {{date}} {{deadline}} {{amountLine}} {{amount}} {{amountWords}} {{purpose2}} {{purpose3}} {{siteUrl}}</div>';
+  h+='<div class="flex" style="margin:10px 0 16px"><button class="btn dark small" onclick="previewTemplates(\'funeral\')">Preview with sample data</button></div>';
+  TPL_META.forEach(function(g){
+    h+='<h3 style="margin-top:22px">'+esc(g[0])+'</h3>';
+    g[1].forEach(function(it,i){
+      var id='tp_'+it[0];
+      h+='<div class="edit-item"><label for="'+id+'" style="margin-top:0">'+esc(it[1])+'</label><textarea id="'+id+'" style="min-height:'+(String(TPL[it[0]]).length>160?'120':'64')+'px" onchange="saveTpl(\''+it[0]+'\',this.value)">'+esc(TPL[it[0]])+'</textarea><div style="margin-top:8px"><button class="btn ghost small" onclick="resetTpl(\''+it[0]+'\')">Reset</button></div></div>';
+    });
+  });
+  return h;
+};
+function purposePhrase(d,second){return tplPurpose(d,second)}
+function purposePhrase_old(d,second){
   var rel=d.rel||'family member',k=d.kind;
   if(k==='funeral')return 'the funeral of '+(second?'your':'the applicant\u2019s')+' '+rel;
   if(k==='naming')return second?'your naming ceremony':'a naming ceremony';
@@ -1320,31 +1473,13 @@ function purposePhrase(d,second){
   return c+(d.sub?' ('+String(d.sub).toLowerCase()+')':'');
 }
 function templateBodies(r,kind,rel){
-  var d={kind:kind,rel:rel,category:r.category,sub:r.sub};
-  return {
-    reason:'The applicant has requested welfare support towards '+purposePhrase(d,false)+'.',
-    statement:tidyEnglish(r.desc),
-    condolence:kind==='funeral'?'The Welfare Committee extends its heartfelt condolences to you and your family on the passing of your '+rel+'. May the soul of the departed rest in perfect peace, and may you and your family find comfort and strength in this difficult time.':'',
-    accept:'We trust that this support will be of help to you. The Welfare Committee remains committed to standing with every member of the association in times of need. Please do not hesitate to contact the Committee should you require any further assistance.',
-    release:'The Welfare Committee sincerely appreciates the continued support of the leadership towards the welfare of members. We respectfully encourage the leadership to keep supporting members in their times of need, and we remain committed to maintaining and strengthening effective coordination and collaboration with the leadership.'
-  };
+  var d={kind:kind,rel:rel,applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub||'',ref:r.ref,
+    fields:{amount:'',deadline:'',date:fmtDay(Date.now())}};
+  return {reason:tpl('reason',d),statement:tidyEnglish(r.desc),condolence:tpl('intro_'+kind,d),accept:tpl('accept_close',d),release:tpl('release_close',d)};
 }
-async function aiBodies(r,kind){
-  var rel=relationOf(r),tpl=templateBodies(r,kind,rel);
-  if(!LIVE)return {bodies:tpl,rel:rel,ai:false,note:'AI is not connected in demo mode, so standard template wording was used. You can still edit everything.'};
-  try{
-    var res=await sb.functions.invoke('welfare-docs',{body:{kind:kind,category:r.category,sub:r.sub||'',description:r.desc||'',relationHint:rel}});
-    if(res.error)throw res.error;
-    if(!res.data||res.data.error)throw new Error((res.data&&res.data.error)||'No answer');
-    var a=res.data.bodies||{};
-    var pick=function(k){var v=a[k];return (typeof v==='string'&&v.trim())?v.trim().slice(0,900):tpl[k]};
-    var rel2=rel;
-    if(kind==='funeral'&&typeof a.relationship==='string'&&/^[a-z][a-z -]{1,28}$/i.test(a.relationship.trim())){rel2=a.relationship.trim().toLowerCase()}
-    if(String(r.sub||'').toLowerCase()==='mother'||String(r.sub||'').toLowerCase()==='father')rel2=String(r.sub).toLowerCase();
-    return {bodies:{reason:pick('reason'),statement:pick('statement'),condolence:kind==='funeral'?pick('condolence'):'',accept:pick('accept'),release:pick('release')},rel:rel2,ai:true,note:''};
-  }catch(e){
-    return {bodies:tpl,rel:rel,ai:false,note:'The AI service could not be reached ('+String(e&&e.message||e).slice(0,120)+'). Standard template wording was used instead. You can still edit everything.'};
-  }
+function makeBodies(r,kind){
+  var rel=relationOf(r);
+  return {bodies:templateBodies(r,kind,rel),rel:rel,ai:false,note:'The wording was prepared from your letter templates. Read every document, edit anything you need, then approve.'};
 }
 function docRow(d){
   return {report_id:d.report_id||null,ref:d.ref,applicant:d.applicant,student_id:d.sid,category:d.category,amount:(Number(d.amount)>0?Number(d.amount):null),status:d.status,generated_by:d.by,ai_used:!!d.ai,
@@ -1362,11 +1497,11 @@ async function saveDoc(d){
   var row=docRow(d),res;
   if(d.dbid){res=await sb.from('welfare_docs').update(row).eq('id',d.dbid)}
   else{res=await sb.from('welfare_docs').insert(row).select('id').single();if(res.data)d.dbid=res.data.id}
-  if(res.error){toast('Could not save the documents: '+res.error.message+'. Has the AI documents SQL been run?');return false}
+  if(res.error){toast('Could not save the documents. '+errMsg(res.error));return false}
   if(DOCS.indexOf(d)<0)DOCS.unshift(d);
   return true;
 }
-function setStatusDirect(r,s){r.status=s;r.history.push({t:Date.now(),status:s,by:SESSION.name});saveR();syncReport(r)}
+async function setStatusDirect(r,s){return opStatus(r,s)}
 function docsPanel(r){
   var k=catKind(r),h='';
   if(!(SESSION.role==='super'||SESSION.role==='welfare'))return '';
@@ -1379,17 +1514,17 @@ function docsPanel(r){
   if(r.anon)return '<h3 style="margin-top:22px">Welfare documents</h3><div class="note">This request is anonymous, so welfare documents cannot be generated.</div>';
   var ex=DOCS.filter(function(d){return d.ref===r.ref})[0];
   h+='<h3 style="margin-top:22px">Welfare documents</h3><div class="card"><p style="margin:0 0 4px"><b>Category:</b> '+esc(KIND_LABEL[k])+'</p><p style="margin:0 0 4px"><b>Status:</b> '+esc(r.status)+'</p><p style="margin:0 0 12px"><b>Approved amount:</b> '+approvedLine(r)+'</p>';
-  h+='<button class="btn primary" style="width:100%;min-height:58px;font-size:1.02rem" onclick="startDocs(\''+r.ref+'\')">GENERATE WELFARE DOCUMENTS WITH AI</button>';
+  h+='<button class="btn primary" style="width:100%;min-height:58px;font-size:1.02rem" onclick="startDocs(\''+r.ref+'\')">GENERATE WELFARE DOCUMENTS</button>';
   if(ex)h+='<p style="margin:12px 0 0"><span class="badge">'+esc(ex.status)+'</span> Documents already exist for this request. <button class="btn ghost small" onclick="openDocSet(\''+r.ref+'\')">Open them</button></p>';
-  h+='<p class="hint" style="margin:12px 0 0">Your application data is not changed. The AI only prepares the wording, and you review, edit and approve everything before it becomes final.</p>';
+  h+='<p class="hint" style="margin:12px 0 0">Your application data is not changed. The documents are prepared from your letter templates, and you review, edit and approve everything before it becomes final.</p>';
   if(['Approved','Partially Approved'].indexOf(r.status)>-1&&canMsgPhone(r))h+='<p style="margin:12px 0 0"><button class="btn ghost small" onclick="resendApproval(\''+r.ref+'\')">Send approval message to the member on WhatsApp</button></p>';
   h+='<p style="margin:10px 0 0"><button class="btn ghost small" onclick="openLetter(\''+r.ref+'\')">Plain letter to the Financial Controller (earlier format)</button></p></div>';
   return h;
 }
-function addAction(ref){
+async function addAction(ref){
   var t=($('actx').value||'').trim();if(!t){toast('Write the action first');return}
   var r=getR(ref);if(!r)return;
-  r.notes.push({by:SESSION.name,text:t,t:Date.now(),kind:'action'});saveR();syncReport(r);
+  if(!await opNote(r,'action',t))return;
   logit(SESSION.name,'Recorded an action on '+ref+'.');toast('Action recorded');render();
 }
 function busy(msg){
@@ -1403,17 +1538,15 @@ async function startDocs(ref){
   if(kind==='issue'||r.anon)return;
   if(['Approved','Partially Approved'].indexOf(r.status)<0){
     if(!confirm('This request is not marked Approved yet (status: '+r.status+').\n\nMark it as Approved and continue?'))return;
-    setStatusDirect(r,'Approved');
+    if(!await setStatusDirect(r,'Approved'))return;
   }
-  var o=busy('AI is preparing the documents…');
-  var res;
-  try{res=await aiBodies(r,kind)}finally{o.remove()}
+  var res=makeBodies(r,kind);
   var fx=fixedAmount(kind);
   var d={dbid:null,report_id:r.id||null,ref:r.ref,kind:kind,rel:res.rel,applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub||'',
     amount:fx!=null?String(fx):((Number(r.approved_amount)||0)>0?String(r.approved_amount):''),status:'Draft',by:SESSION.name,at:Date.now(),ai:res.ai,note:res.note,
     bodies:res.bodies,fields:{amount:fx!=null?String(fx):((Number(r.approved_amount)||0)>0?String(r.approved_amount):''),treasurer:(C.docs&&C.docs.treasurer)||'',date:fmtDay(Date.now()),deadline:'',method:'',txn:'',remarks:'',disbursed:''}};
   await saveDoc(d);
-  logit(SESSION.name,'Generated welfare documents for '+ref+(res.ai?' with AI.':' (template wording).'));
+  logit(SESSION.name,'Generated welfare documents for '+ref+'.');
   state.doc=d;drawDocs();
 }
 function openDocSet(refOrDoc){
@@ -1424,33 +1557,27 @@ function openDocSet(refOrDoc){
 /* ----- the three documents ----- */
 function ul(v,w){return v?esc(v):'<span style="display:inline-block;border-bottom:1px solid #000;min-width:'+(w||240)+'px">&nbsp;</span>'}
 function docHead(w){return '<div style="text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px">'+(w?'':'<img src="'+esc(logoSrc())+'" alt="" style="width:62px;height:62px;border-radius:50%"><br>')+'<b style="font-size:13pt">'+esc(ORG.l1)+'</b><br><b>'+esc(ORG.l2)+'</b><br><b style="letter-spacing:.06em">'+esc(ORG.l3)+'</b></div>'}
-function sigBlock(name,title){return '<div style="margin-top:26px;page-break-inside:avoid"><div style="border-bottom:1px solid #000;height:46px;width:270px"></div><b>'+(name?esc(name):'&nbsp;')+'</b><br>'+esc(title)+'</div>'}
+function sigBlock(name,title){return '<div style="margin-top:34px;page-break-inside:avoid"><div style="border-bottom:1px solid #000;height:88px;width:300px"></div><b>'+(name?esc(name):'&nbsp;')+'</b><br>'+esc(title)+'</div>'}
 function paras(arr){return arr.filter(Boolean).map(function(x){return '<p style="margin:0 0 10px;text-align:justify">'+esc(x).replace(/\n/g,'<br>')+'</p>'}).join('')}
 function amtText(d){return Number(d.fields.amount)>0?moneyLine(d.fields.amount):'GH₵ ______________'}
-function deadlineSentence(d){return d.fields.deadline?'Please note the following deadline: '+d.fields.deadline+'.':''}
+function deadlineSentence(d){return d.fields.deadline?tpl('deadline',d):''}
 function detailsTable(d){
   var rows=[['Name',d.applicant],['Student ID',d.sid],['Programme',d.programme],['Level',d.level],['Purpose / Category',d.category+(d.sub?' ('+d.sub+')':'')],['Approved Amount',amtText(d)]];
   return '<table style="border-collapse:collapse;width:100%;min-width:0;font-size:11pt;margin:6px 0 12px">'+rows.map(function(x){return '<tr><td style="border:1px solid #000;padding:5px 8px;width:36%;background:#f2f2f2"><b>'+esc(x[0])+'</b></td><td style="border:1px solid #000;padding:5px 8px">'+esc(x[1]||'')+'</td></tr>'}).join('')+'</table>';
 }
+function acceptPre(d){return {subject:tpl('accept_subject',d),ps:[d.bodies.condolence,tpl('accept_approval',d),tpl('accept_amount',d),deadlineSentence(d),d.bodies.accept]}}
 function sheet1(d,w){
-  var f=d.fields,b=d.bodies,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison';
-  var ps=[b.condolence,
-    'On behalf of the Welfare Committee of the Nurses and Midwives Students’ Association (NAMSA-PU), Pentecost University, we are pleased to inform you that your application for welfare support towards '+purposePhrase(d,true)+' (reference '+d.ref+') has been approved.',
-    'The approved amount is '+amtText(d)+'.',
-    deadlineSentence(d),b.accept];
+  var f=d.fields,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison',P=d.pre||acceptPre(d);
   return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:10px 0 0"><b>'+esc(d.applicant)+'</b></p>'
     +'<p style="margin:0">Student ID: '+esc(d.sid||'')+'</p><p style="margin:0 0 12px">'+esc(d.programme||'')+(d.level?', Level '+esc(d.level):'')+'</p>'
-    +'<p style="margin:0 0 10px">Dear '+esc(d.applicant)+',</p><p style="margin:0 0 10px"><b><u>ACCEPTANCE OF WELFARE SUPPORT: '+esc(String(KIND_LABEL[d.kind]||d.category).toUpperCase())+'</u></b></p>'
-    +paras(ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary');
+    +'<p style="margin:0 0 10px">Dear '+esc(d.applicant)+',</p><p style="margin:0 0 10px"><b><u>'+esc(P.subject)+'</u></b></p>'
+    +paras(P.ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary');
 }
 function sheet2(d,w){
   var f=d.fields,b=d.bodies,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison',D=C.docs||{};
-  var ps=['The Welfare Committee has reviewed and approved the application of '+d.applicant+' (Student ID: '+(d.sid||'')+'), a '+(d.level?'Level '+d.level+' ':'')+(d.programme||'')+' student, for welfare support towards '+purposePhrase(d,false)+'.',
-    b.reason,b.statement,
-    'The approved amount is '+amtText(d)+'. We therefore respectfully request the release of the approved funds so that the Welfare Committee can disburse the support to the member.',
-    deadlineSentence(d),b.release];
+  var ps=[tpl('release_intro',d),b.reason,b.statement,tpl('release_request',d),deadlineSentence(d),b.release];
   return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:10px 0 2px"><b>To:</b> '+esc(D.president||'The President, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.patron||'The Patron, NAMSA-PU')+'</p><p style="margin:0 0 12px"><b>Cc:</b> '+esc(D.controller||'The Financial Controller, NAMSA-PU')+'</p>'
-    +'<p style="margin:0 0 10px">Dear Sir/Madam,</p><p style="margin:0 0 10px"><b><u>REQUEST FOR RELEASE OF WELFARE SUPPORT FUNDS: '+esc(String(d.applicant).toUpperCase())+(d.sid?' ('+esc(d.sid)+')':'')+'</u></b></p>'
+    +'<p style="margin:0 0 10px">Dear Sir/Madam,</p><p style="margin:0 0 10px"><b><u>'+esc(tpl('release_subject',d))+'</u></b></p>'
     +detailsTable(d)+paras(ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary');
 }
 function sheet3(d,w){
@@ -1459,7 +1586,7 @@ function sheet3(d,w){
   function auth(title,name){return '<div style="margin:12px 0 16px;page-break-inside:avoid"><b>'+esc(title)+'</b><p style="margin:8px 0 8px">Signature: <span style="display:inline-block;border-bottom:1px solid #000;min-width:260px;height:30px">&nbsp;</span></p><p style="margin:0 0 8px">Name: '+ul(name,260)+'</p><p style="margin:0">Date: '+ul('',200)+'</p></div>'}
   return docHead(w)+'<p style="text-align:center;margin:0 0 4px"><b><u>WELFARE SUPPORT DISBURSEMENT &amp; ACKNOWLEDGEMENT FORM</u></b></p><p style="text-align:center;margin:0 0 12px;font-size:10pt">Reference: '+esc(d.ref)+' &nbsp;|&nbsp; Date: '+esc(f.date)+'</p>'
     +'<p style="margin:0 0 4px"><b>MEMBER’S DETAILS</b></p>'+detailsTable(d)
-    +paras(['I, '+d.applicant+', hereby acknowledge that I have received the approved welfare support of '+amtText(d)+' in full from the Welfare Committee of the Nurses and Midwives Students’ Association (NAMSA-PU), Pentecost University.'])
+    +paras([tpl('ack_statement',d)])
     +'<p style="margin:14px 0 12px">Member’s Signature: <span style="display:inline-block;border-bottom:1px solid #000;min-width:280px;height:30px">&nbsp;</span></p><p style="margin:0 0 16px">Date: '+ul('',220)+'</p>'
     +'<p style="margin:0 0 4px"><b>AUTHORISATION</b></p>'+auth('Welfare Committee Secretary',S)+auth('Welfare Committee Head',H)+auth('Welfare Committee Treasurer',T)
     +'<p style="margin:0 0 8px"><b>OFFICIAL USE</b></p>'+line('Amount Disbursed',f.disbursed?money(f.disbursed):'',260)+line('Payment Method',f.method,260)+line('Transaction/Reference No.',f.txn,260)+line('Remarks',f.remarks,380);
@@ -1480,13 +1607,13 @@ function drawDocs(){
   var el=document.createElement('div');el.className='lt';el.setAttribute('role','dialog');el.setAttribute('aria-label','Welfare documents');el.setAttribute('data-print','all');
   var h='<div class="noprint" style="max-width:794px;margin:0 auto"><div class="flex spread"><h2 style="margin:0">Welfare documents</h2><button class="btn ghost small" onclick="closeDocs()">Close</button></div>'
    +'<p style="margin:8px 0"><span class="badge '+(fin?'good':'')+'">'+esc(d.status)+'</span> <b>'+esc(d.applicant)+'</b> &middot; '+esc(d.ref)+'</p>'
-   +(d.ai?'<div class="note ok">The wording was prepared by AI. Read every document carefully, edit anything you need, then approve.</div>':'<div class="note">'+esc(d.note||'Standard template wording was used.')+'</div>')
+   +'<div class="note ok">The wording was prepared from your letter templates. Read every document carefully, edit anything you need, then approve.</div>'
    +'<div class="note">The applicant’s name, student ID and other facts are copied exactly as stored. Nothing here changes the original application.</div>';
   if(fixed!=null){h+='<label for="df_amount">Approved amount (GH₵) <span class="hint">fixed for '+esc(KIND_LABEL[d.kind])+'. Change it under Settings if needed.</span></label><input type="text" id="df_amount" value="'+esc(f.amount)+'" disabled>'}
   else{h+=inp('df_amount','Approved amount (GH₵)','amount',lock,'number',(r&&r.amount?'Member requested: GHS '+esc(r.amount):''));}
   h+='<p class="hint" id="df_words" style="margin:6px 0 0">'+(Number(f.amount)>0?esc(moneyLine(f.amount)):'Enter the amount. It will be written in words automatically.')+'</p>';
   h+=inp('df_treasurer','Welfare Committee Treasurer (name)','treasurer',lock)+inp('df_date','Date','date',lock)+inp('df_deadline','Deadline','deadline',lock,'text','only if the application has one. Leave empty otherwise.');
-  h+=ta('db_reason','Request letter: reason (third person)','reason')+ta('db_statement','Request letter: applicant’s statement, corrected English','statement')+ta('db_condolence','Acceptance letter: condolence message','condolence',d.kind==='funeral')+ta('db_accept','Acceptance letter: closing message','accept')+ta('db_release','Request letter: closing paragraph','release');
+  h+=ta('db_reason','Request letter: reason (third person)','reason')+ta('db_statement','Request letter: applicant’s statement, corrected English','statement')+ta('db_condolence','Acceptance letter: opening message (condolence or congratulations)','condolence',true)+ta('db_accept','Acceptance letter: closing message','accept')+ta('db_release','Request letter: closing paragraph','release');
   h+='<h3 style="margin-top:20px">Official use (disbursement)</h3>'+inp('df_disbursed','Amount disbursed (GH₵)','disbursed',lockAll,'number')+inp('df_method','Payment method','method',lockAll)+inp('df_txn','Transaction / reference no.','txn',lockAll)+inp('df_remarks','Remarks','remarks',lockAll);
   h+='<div class="flex" style="margin:18px 0 6px">';
   if(!fin){h+='<button class="btn ghost" onclick="docSaveDraft()">Save draft</button><button class="btn ghost" onclick="docMarkReviewed()">Mark as reviewed</button><button class="btn primary" onclick="docFinalize()">APPROVE &amp; FINALIZE DOCUMENTS</button>'}
@@ -1505,8 +1632,8 @@ async function docFinalize(){
   if(!confirm('Approve and finalize these documents?\n\nAmount: '+moneyLine(d.fields.amount)+'\n\nAfter this, the amount, wording and dates are locked.'))return;
   d.status='Finalized';d.amount=d.fields.amount;
   var r=getR(d.ref);
-  if(r){r.approved_amount=Number(d.fields.amount);if(['Approved','Partially Approved'].indexOf(r.status)<0)setStatusDirect(r,'Approved');else{saveR();syncReport(r)}}
-  if(await saveDoc(d)){logit(SESSION.name,'Finalized welfare documents for '+d.ref+' ('+money(d.fields.amount)+').');toast('Documents finalized');drawDocs();sendAcceptanceToMember(true)}
+  if(r){await opAmounts(r,Number(d.fields.amount),null);if(['Approved','Partially Approved'].indexOf(r.status)<0)await opStatus(r,'Approved')}
+  if(await saveDoc(d)){logit(SESSION.name,'Finalized welfare documents for '+d.ref+' ('+money(d.fields.amount)+').');toast('Documents finalized');drawDocs();await sendAcceptanceToMember(true)}
 }
 async function docReopen(){
   if(!confirm('Reopen these documents for editing?'))return;
@@ -1517,7 +1644,7 @@ async function docDisburse(){
   if(!(Number(f.disbursed)>0)){f.disbursed=f.amount}
   if(!confirm('Record that '+money(f.disbursed)+' has been disbursed to '+d.applicant+'?'))return;
   d.status='Disbursed';
-  var r=getR(d.ref);if(r){r.disbursed_amount=Number(f.disbursed);saveR();syncReport(r)}
+  var r=getR(d.ref);if(r){await opAmounts(r,null,Number(f.disbursed))}
   if(await saveDoc(d)){logit(SESSION.name,'Recorded disbursement of '+money(f.disbursed)+' for '+d.ref+'.');toast('Disbursement recorded');drawDocs()}
 }
 function docPrint(n){var o=document.querySelector('.lt');if(!o)return;o.setAttribute('data-print',String(n));window.print();setTimeout(function(){o.setAttribute('data-print','all')},800)}
@@ -1526,9 +1653,9 @@ function docWord(){
   var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Welfare documents</title></head><body style="font-family:\'Times New Roman\',serif;font-size:12pt">'+sh+'</body></html>';
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+html],{type:'application/msword'}));a.download='NAMSA-PU-Welfare-Documents-'+safeName(d.ref)+'.doc';document.body.appendChild(a);a.click();a.remove();
 }
-/* ----- AI document history ----- */
+/* ----- document history ----- */
 ADMIN.dochist=function(){
-  var h='<div class="flex spread" style="margin-bottom:10px"><h2 style="margin:0">AI document history</h2><button class="btn ghost small" onclick="refreshDocs()">Refresh</button></div>';
+  var h='<div class="flex spread" style="margin-bottom:10px"><h2 style="margin:0">Document history</h2><button class="btn ghost small" onclick="refreshDocs()">Refresh</button></div>';
   if(!DOCS.length)return h+'<div class="card"><p style="margin:0">No documents have been generated yet.</p></div>';
   return h+'<div class="scroll-x"><table style="min-width:820px"><thead><tr><th>Applicant</th><th>Student ID</th><th>Reference</th><th>Category</th><th>Amount</th><th>Generated</th><th>By</th><th>Status</th></tr></thead><tbody>'
    +DOCS.map(function(d,i){return '<tr class="click" tabindex="0" onclick="openDocSet(DOCS['+i+'])" onkeydown="if(event.key===\'Enter\')openDocSet(DOCS['+i+'])"><td>'+esc(d.applicant)+'</td><td>'+esc(d.sid||'')+'</td><td>'+esc(d.ref)+'</td><td>'+esc(d.category)+'</td><td>'+(Number(d.amount)>0?esc(money(d.amount)):'-')+'</td><td>'+esc(fmt(d.at))+'</td><td>'+esc(d.by||'')+'</td><td><span class="badge '+(d.status==='Finalized'||d.status==='Disbursed'?'good':'')+'">'+esc(d.status)+'</span></td></tr>'}).join('')+'</tbody></table></div><p class="hint">Tap a row to open the documents. Original applications are never changed by this history.</p>';
@@ -1577,30 +1704,34 @@ ADMIN.settings=function(){return ADMIN.settings0()+docSettings()+waSettings()};
 function canMsgPhone(r){return !r.anon&&String(r.phone||'').replace(/\D/g,'').length>=9}
 function siteUrl(){return (location.origin||'')+(location.pathname||'/')}
 function approvalText(r,amt){
-  var k=catKind(r),sorry=(k==='funeral')?'We are deeply sorry for your loss. ':'';
-  return 'Dear '+r.name+', '+sorry+'the NAMSA-PU Welfare Committee is pleased to inform you that your welfare application ('+r.ref+') has been approved'+(amt?' for '+money(amt):'')+'. '
-    +(amt?'Your acceptance letter is ready. ':'The Committee will send your acceptance letter once the approved amount is confirmed. ')
-    +'To view it, open '+siteUrl()+' , tap Track My Report, and enter your tracking code and the last 4 digits of this phone number.';
+  var k=catKind(r),d={kind:k,rel:relationOf(r),applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub||'',ref:r.ref,
+    fields:{amount:amt?String(amt):'',deadline:'',date:fmtDay(Date.now())}};
+  var v=baseVars(d);
+  v.sympathy=(k==='funeral')?'We are deeply sorry for your loss. ':'';
+  v.amountPhrase=amt?' for '+money(amt):'';
+  v.letterPhrase=amt?'Your acceptance letter is ready. ':'The Committee will send your acceptance letter once the approved amount is confirmed. ';
+  return tplFill(tplGet('wa_message',k),v);
 }
 function templateLetterData(r,k,amt){
   var rel=relationOf(r),b=templateBodies(r,k,rel);
-  return {ref:r.ref,kind:k,rel:rel,applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub||'',
+  var x={ref:r.ref,kind:k,rel:rel,applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub||'',
     fields:{amount:String(amt),date:fmtDay(Date.now()),deadline:''},bodies:{reason:b.reason,condolence:b.condolence,accept:b.accept}};
+  x.pre=acceptPre(x);return x;
 }
 function docLetterData(d){
-  return {ref:d.ref,kind:d.kind,rel:d.rel,applicant:d.applicant,sid:d.sid,programme:d.programme,level:d.level,category:d.category,sub:d.sub||'',
+  var x={ref:d.ref,kind:d.kind,rel:d.rel,applicant:d.applicant,sid:d.sid,programme:d.programme,level:d.level,category:d.category,sub:d.sub||'',
     fields:{amount:d.fields.amount,date:d.fields.date,deadline:d.fields.deadline||''},bodies:{reason:d.bodies.reason||'',condolence:d.bodies.condolence||'',accept:d.bodies.accept||''}};
+  x.pre=acceptPre(x);return x;
 }
-function postLetter(r,d,final){
-  r.messages.push({from:'Committee',by:SESSION.name,text:'Your application has been approved. Your acceptance letter is ready. Tap the button below to open it, print it or save it as a PDF.',letter:{d:d,final:!!final},t:Date.now()});
-  saveR();syncReport(r);
+async function postLetter(r,d,final){
+  return opMessage(r,'Your application has been approved. Your acceptance letter is ready. Tap the button below to open it, print it or save it as a PDF.',[],{d:d,final:!!final});
 }
 async function autoApproved(r){
   var k=catKind(r);
   if(k==='issue')return;
   if(!canMsgPhone(r)){toast('Approved. This request has no phone number, so no WhatsApp message was prepared.');return}
   var fx=fixedAmount(k),amt=fx!=null?fx:((Number(r.approved_amount)||0)>0?Number(r.approved_amount):null);
-  if(amt!=null){postLetter(r,templateLetterData(r,k,amt),false);logit(SESSION.name,'Acceptance letter placed on the tracking page of '+r.ref+'.')}
+  if(amt!=null){await postLetter(r,templateLetterData(r,k,amt),false);logit(SESSION.name,'Acceptance letter placed on the tracking page of '+r.ref+'.')}
   await notifyWhatsApp(r,approvalText(r,amt));
 }
 async function resendApproval(ref){
@@ -1612,7 +1743,7 @@ async function sendAcceptanceToMember(auto){
   var d=state.doc;if(!d)return;
   var r=getR(d.ref);if(!r){toast('Request not found');return}
   if(auto&&(r.messages||[]).some(function(m){return m.letter&&m.letter.final}))return;
-  postLetter(r,docLetterData(d),true);
+  await postLetter(r,docLetterData(d),true);
   logit(SESSION.name,'Sent the finalized acceptance letter to the member on '+d.ref+'.');
   toast('Acceptance letter placed on the member\u2019s tracking page');
   if(canMsgPhone(r))await notifyWhatsApp(r,approvalText(r,Number(d.fields.amount)));
@@ -1623,7 +1754,7 @@ async function notifyWhatsApp(r,text){
     try{
       var res=await sb.functions.invoke('whatsapp-notify',{body:{ref:r.ref,text:text}});
       if(!res.error&&res.data&&res.data.ok){
-        r.notes.push({by:SESSION.name,text:'Approval message sent to the member on WhatsApp automatically.',t:Date.now(),kind:'whatsapp'});saveR();syncReport(r);
+        await opNote(r,'whatsapp','Approval message sent to the member on WhatsApp automatically.');
         logit(SESSION.name,'WhatsApp approval message sent automatically for '+r.ref+'.');toast('WhatsApp message sent to the member');render();return;
       }
     }catch(e){}
@@ -1641,10 +1772,10 @@ function showWaPrompt(r,text){
   document.body.appendChild(d);
 }
 function waClose(){var o=document.getElementById('wadlg');if(o)o.remove()}
-function waOpen(){
+async function waOpen(){
   var w=state.wa,r=w&&getR(w.ref);if(!r)return;
   window.open('https://wa.me/'+waNum(r.phone)+'?text='+encodeURIComponent(w.text),'_blank','noopener');
-  r.notes.push({by:SESSION.name,text:'Approval message opened in WhatsApp for sending to the member.',t:Date.now(),kind:'whatsapp'});saveR();syncReport(r);
+  await opNote(r,'whatsapp','Approval message opened in WhatsApp for sending to the member.');
   logit(SESSION.name,'WhatsApp approval message opened for '+r.ref+'.');waClose();
 }
 function msgLetter(m,mi,admin){
@@ -1659,14 +1790,63 @@ function openMsgLetter(mi,admin){
   el.innerHTML='<div class="noprint" style="max-width:794px;margin:0 auto"><div class="flex spread"><h2 style="margin:0">Acceptance letter</h2><button class="btn ghost small" onclick="closeLetter()">Close</button></div><div class="flex" style="margin:12px 0"><button class="btn primary" onclick="window.print()">Print or save as PDF</button></div><p class="hint">On a phone, choose Print, then Save as PDF or Share.</p></div><div class="lsheet">'+sheet1(m.letter.d,false)+'</div>';
   document.body.appendChild(el);
 }
+
+/* ---------- advertisement space ---------- */
+function adsSection(){
+  try{
+    var A=C.ads;if(!A||A.enabled===false)return '';
+    var today=new Date().toISOString().slice(0,10);
+    var list=(A.items||[]).filter(function(x){return x&&x.active!==false&&x.image&&(!x.from||x.from<=today)&&(!x.to||x.to>=today)});
+    var cards=list.map(function(x){
+      var inner='<img src="'+esc(x.image)+'" alt="'+esc(x.name||'Advertisement')+'" loading="lazy">'+(x.name?'<span class="adz-cap">'+esc(x.name)+'</span>':'');
+      return x.url&&safeUrl(x.url)!=='#'?'<a class="adz-card" href="'+esc(safeUrl(x.url))+'" target="_blank" rel="sponsored noopener noreferrer">'+inner+'</a>':'<div class="adz-card">'+inner+'</div>';
+    }).join('');
+    return '<section class="blk" style="padding-top:0"><div class="wrap"><aside class="adz" aria-label="Advertisements"><div class="adz-h"><span>'+esc(A.heading||'Advertisements')+'</span><small>Advertisements are not part of the Welfare Committee\u2019s services.</small></div>'
+      +(cards?'<div class="adz-grid">'+cards+'</div>':'<div class="adz-empty">Advertising space available.<br><small>'+esc(A.contact||'')+'</small></div>')+'</aside></div></section>';
+  }catch(e){return ''}
+}
+function adSet(i,k,v){if(!C.ads.items[i])return;C.ads.items[i][k]=v;saveC();toast('Saved')}
+function adUrl(i,v){v=String(v||'').trim();if(v&&!/^https:\/\//i.test(v)){toast('The link must start with https://');render();return}adSet(i,'url',v)}
+function addAd(){if(C.ads.items.length>=8){toast('You can have up to 8 advertisements.');return}C.ads.items.push({id:uid(),name:'',url:'',image:'',active:true,from:'',to:''});saveC();render()}
+function delAd(i){if(!confirm('Remove this advertisement?'))return;C.ads.items.splice(i,1);saveC();render()}
+function moveAd(i,d){var j=i+d,L=C.ads.items;if(j<0||j>=L.length)return;var t=L[i];L[i]=L[j];L[j]=t;saveC();render()}
+function adImg(i,input){
+  var f=input.files&&input.files[0];if(!f||!C.ads.items[i])return;
+  var rd=new FileReader();
+  rd.onload=function(){var img=new Image();img.onload=function(){
+    var k=Math.min(1,960/img.width),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);toast('Uploading...');
+    storeImg(jpegUnder(cv,.82)).then(function(u){if(!u)return;C.ads.items[i].image=u;saveC();render()});
+  };img.onerror=function(){toast('That image could not be read')};img.src=rd.result};
+  rd.readAsDataURL(f);
+}
+ADMIN.ads=function(){
+  var A=C.ads;
+  var h='<h2>Advertisements</h2><p class="hint">This is a separate, clearly labelled space on the home page. It never changes the rest of the website. Each picture must be 200 KB or smaller, and links must start with https://.</p>';
+  h+='<div class="edit-item"><div class="check"><input type="checkbox" id="ad_on" '+(A.enabled!==false?'checked':'')+' onchange="C.ads.enabled=this.checked;saveC();toast(\'Saved\')"><label for="ad_on" style="margin:0">Show the advertisement space on the home page</label></div>'
+    +'<label for="ad_h">Heading</label><input type="text" id="ad_h" value="'+esc(A.heading)+'" onchange="C.ads.heading=this.value;saveC();toast(\'Saved\')">'
+    +'<label for="ad_c">Message shown when there are no active advertisements</label><input type="text" id="ad_c" value="'+esc(A.contact)+'" onchange="C.ads.contact=this.value;saveC();toast(\'Saved\')"></div>';
+  h+=A.items.map(function(x,i){
+    return '<div class="edit-item"><div class="flex"><div class="thumb" style="width:96px;height:54px">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'<span>Ad</span>')+'</div>'
+      +'<div class="flex"><label class="btn dark small" for="adi'+i+'" style="margin:0">Choose picture (max 200 KB)</label><input type="file" id="adi'+i+'" class="sr" accept="image/*" onchange="adImg('+i+',this)"></div></div>'
+      +'<label for="adn'+i+'">Advertiser name</label><input type="text" id="adn'+i+'" value="'+esc(x.name)+'" onchange="adSet('+i+',\'name\',this.value)">'
+      +'<label for="adu'+i+'">Link (https://...)</label><input type="text" id="adu'+i+'" value="'+esc(x.url)+'" onchange="adUrl('+i+',this.value)">'
+      +'<div class="row two"><div><label for="adf'+i+'">Show from</label><input type="date" id="adf'+i+'" value="'+esc(x.from||'')+'" onchange="adSet('+i+',\'from\',this.value)"></div><div><label for="adt'+i+'">Show until</label><input type="date" id="adt'+i+'" value="'+esc(x.to||'')+'" onchange="adSet('+i+',\'to\',this.value)"></div></div>'
+      +'<div class="check"><input type="checkbox" id="ada'+i+'" '+(x.active!==false?'checked':'')+' onchange="adSet('+i+',\'active\',this.checked)"><label for="ada'+i+'" style="margin:0">Active</label></div>'
+      +'<div class="flex"><button class="btn ghost small" onclick="moveAd('+i+',-1)">Move up</button><button class="btn ghost small" onclick="moveAd('+i+',1)">Move down</button><button class="btn danger small" onclick="delAd('+i+')">Remove</button></div></div>';
+  }).join('');
+  h+='<button class="btn dark small" onclick="addAd()">Add an advertisement</button>';
+  return h;
+};
 function getR(ref){return REPORTS.filter(function(x){return x.ref===ref})[0]}
-function setStatus(ref){
+async function setStatus(ref){
   var r=getR(ref),s=$('ns').value;if(!r||s===r.status)return;
-  var prevSt=r.status;r.status=s;r.history.push({t:Date.now(),status:s,by:SESSION.name});saveR();syncReport(r);
-  logit(SESSION.name,'Changed status of '+ref+' to '+s+'.'+(r.email&&C.notify.sendMemberEmails?' Email to member (simulated).':''));
+  var prevSt=r.status;
+  if(!await opStatus(r,s))return;
+  logit(SESSION.name,'Changed status of '+ref+' to '+s+'.');
   toast('Status updated');render();
   var ap=['Approved','Partially Approved'];
-  if(ap.indexOf(s)>-1&&ap.indexOf(prevSt)<0)autoApproved(r);
+  if(ap.indexOf(s)>-1&&ap.indexOf(prevSt)<0)await autoApproved(r);
 }
 async function adminMsg(ref){
   var t=$('am2').value.trim();
@@ -1677,19 +1857,22 @@ async function adminMsg(ref){
   var files=[];
   if(LIVE){
     toast('Uploading...');
-    for(var i=0;i<vf.files.length;i++){
-      var f=vf.files[i],path=safeName(ref)+'/'+randToken()+'/'+safeName(f.name);
-      var up=await sb.storage.from('member-docs').upload(path,f,{contentType:f.type||'application/octet-stream'});
-      if(up.error){toast('Upload failed: '+up.error.message);return}
-      files.push({name:f.name,size:f.size,path:path,url:sb.storage.from('member-docs').getPublicUrl(path).data.publicUrl});
-    }
+    try{
+      var packed=await packFiles(vf.files);
+      for(var i=0;i<packed.length;i++){
+        var up=await sb.rpc('staff_add_file',{p_ref:ref,p_file:packed[i]});
+        if(up.error||!up.data)throw (up.error||new Error('failed'));
+        files.push({fid:up.data.fid,name:up.data.name,size:up.data.size});
+      }
+    }catch(err){toast(errMsg(err));return}
   }else{files=vf.files.map(function(f){return {name:f.name,size:f.size}})}
-  r.messages.push({from:'Committee',by:SESSION.name,text:t,files:files,t:Date.now()});saveR();syncReport(r);
+  if(!await opMessage(r,t,files,null))return;
   logit(SESSION.name,'Sent a message'+(files.length?' with '+files.length+' document(s)':'')+' to the member on '+ref+'.');toast('Message sent');render();
 }
-function addNote(ref){
+async function addNote(ref){
   var t=$('nt').value.trim();if(!t)return;
-  var r=getR(ref);r.notes.push({by:SESSION.name,text:t,t:Date.now()});saveR();syncReport(r);
+  var r=getR(ref);if(!r)return;
+  if(!await opNote(r,'note',t))return;
   logit(SESSION.name,'Added an internal note on '+ref+'.');toast('Note saved');render();
 }
 
