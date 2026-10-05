@@ -210,6 +210,23 @@ a.act:hover{background:var(--info-bg)}
 .staffdot::after{content:"";position:absolute;left:15px;top:15px;width:14px;height:14px;border-radius:50%;background:var(--muted);opacity:.3;transition:opacity .2s,transform .2s}
 .staffdot:hover::after,.staffdot:focus-visible::after{opacity:.85;transform:scale(1.25)}
 
+
+.msg.ready{background:var(--ok-bg);border:2px solid var(--go)}
+.readybanner{background:var(--ok-bg);border:2px solid var(--go);border-radius:14px;padding:14px 16px;margin-top:16px;font-weight:600}
+/* advertisement banner: first thing on every page, in the normal flow (never covers content or navigation) */
+.adtop{background:var(--bg);border-bottom:1px solid var(--line);padding:8px 0}
+.adtop-box{position:relative;border-radius:16px;overflow:hidden;background:var(--surface);border:1px solid var(--line);box-shadow:0 4px 14px rgba(10,74,166,.14)}
+.adtop-slide{display:none;position:relative;color:inherit;text-decoration:none}
+.adtop-slide.on{display:block;animation:cmUp .5s ease both}
+.adtop-slide img{display:block;width:100%;height:clamp(110px,28vw,240px);object-fit:cover}
+.adtop-tag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+.adtop-name{position:absolute;left:0;right:0;bottom:0;padding:22px 70px 8px 12px;color:#fff;font-weight:700;font-size:.92rem;background:linear-gradient(transparent,rgba(0,0,0,.68))}
+.adtop-dots{position:absolute;right:4px;bottom:2px;display:flex}
+.adtop-dot{width:26px;height:26px;border:0;background:transparent;position:relative;cursor:pointer;padding:0}
+.adtop-dot::after{content:"";position:absolute;left:8px;top:8px;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.6)}
+.adtop-dot.on::after{background:#fff}
+.adtop-empty{display:flex;align-items:center;justify-content:center;min-height:52px;padding:10px 14px;border:2px dashed var(--line);border-radius:14px;color:var(--muted);font-weight:600;text-align:center;font-size:.92rem}
+
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:12px 22px;border-radius:14px;border:2px solid transparent;font-weight:700;cursor:pointer;text-decoration:none;text-align:center}
 .btn.primary{background:var(--sun);color:var(--sun-ink)}
@@ -332,6 +349,7 @@ footer.foot a{color:var(--brand)}
 <body>
 <a class="skip" href="#app">Skip to content</a>
 <div class="proto" id="protoBanner" role="note"><div class="wrap"><span aria-hidden="true">&#9888;</span><span><b>Design prototype.</b> Everything you enter is saved only on this device and is not sent to anyone. Before real use, the site must be connected to a secure server (see the setup plan).</span></div></div>
+<div class="adtop" id="adtop" style="display:none"></div>
 <header class="top">
   <div class="wrap">
     <div class="bar">
@@ -651,7 +669,7 @@ function drawFoot(){
   $('foot').innerHTML='<p><b>'+esc(C.site.name)+'</b><br>Phone: '+c.phones.map(function(n){return phoneLink(n)}).join(' &middot; ')+'<br>Email: <a href="mailto:'+esc(c.email)+'">'+esc(c.email)+'</a></p><p><a href="#/gallery">Gallery</a> &middot; <a href="#/privacy">Privacy policy</a> <a class="staffdot" href="#/admin" aria-label="Staff sign in"></a></p>';
 }
 function render(){
-  applyBrand();drawNav();drawFoot();
+  applyBrand();drawAdTop();drawNav();drawFoot();
   var r=route(),v=VIEWS[r]||VIEWS.home;
   var showDock=['report','admin'].indexOf(r)<0;$('dock').style.display=showDock?'':'none';document.body.classList.toggle('hasdock',showDock);
   $('app').innerHTML=v();
@@ -683,7 +701,6 @@ VIEWS.home=function(){
   +'<section class="blk" style="padding-top:0"><div class="wrap"><h2>How to get support</h2><ol class="steps">'+C.steps.map(function(x){return '<li><span><b>'+esc(x.h)+'</b> '+esc(x.p)+'</span></li>'}).join('')+'</ol></div></section>'
   +'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Current executives</h2><a href="#/executives">See all</a></div><div class="grid ppl">'+C.executives.slice(0,4).map(person).join('')+'</div></div></section>'
   +(C.gallery.length?'<section class="blk" style="padding-top:0"><div class="wrap"><div class="flex spread"><h2>Moments</h2><a href="#/gallery">See all</a></div>'+galleryGrid(C.gallery.slice(0,8),true)+'</div></section>':'')
-  +adsSection()
   +'<section class="blk" style="padding-top:0"><div class="wrap"><h2>Contact the committee</h2><div class="card">'+contactBlock()+'</div></div></section>';
 };
 function contactBlock(){
@@ -862,8 +879,9 @@ function doTrack(e){
 function drawTrack(r){
   state.trackMsgs=r.messages||[];
   var h='<div class="card" style="margin-top:22px"><p><b>'+esc(r.ref)+'</b></p><p>Category: '+esc(r.category)+(r.sub?' ('+esc(r.sub)+')':'')+'<br>Submitted: '+esc(fmt(r.created))+'</p><p style="margin:0">Status: '+badge(r.status)+'</p></div>';
+  if((r.messages||[]).some(function(m){return m.tag==='money_ready'}))h+='<div class="readybanner">Good news: your funds are ready. Please read the message below for what to do next.</div>';
   h+='<h3 style="margin-top:22px">Progress</h3><ul class="timeline">'+r.history.map(function(x){return '<li><b>'+esc(x.status)+'</b><br><span class="hint">'+esc(fmt(x.t))+'</span></li>'}).join('')+'</ul>';
-  h+='<h3 style="margin-top:22px">Messages</h3>'+(r.messages.length?r.messages.map(function(m,mi){return '<div class="msg '+(m.from==='Committee'?'c':'m')+'"><small>'+esc(m.from)+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+msgFiles(m,false)+msgLetter(m,mi,false)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>');
+  h+='<h3 style="margin-top:22px">Messages</h3>'+(r.messages.length?r.messages.map(function(m,mi){return '<div class="msg '+msgCls(m)+'"><small>'+esc(m.from)+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+msgFiles(m,false)+msgLetter(m,mi,false)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>');
   if(r.status==='Information Required'){h+='<div class="note">The committee needs more information. Reply below.</div>'}
   h+='<label for="rp">Reply to the committee</label><textarea id="rp"></textarea><label for="rpf">Attach documents <span class="hint">(optional: PDF, JPG or PNG, up to 3 files, each up to 200 KB. Compress larger files first)</span></label><input type="file" id="rpf" multiple accept=".pdf,.jpg,.jpeg,.png" style="width:100%;padding:10px;border:2px dashed var(--line);border-radius:12px;background:var(--surface)"><button class="btn dark" style="margin-top:10px" onclick="memberReply(\''+esc(r.ref)+'\')">Send reply</button>';
   $('tres').innerHTML=h;
@@ -1033,9 +1051,9 @@ async function opNote(r,kind,text){
   if(LIVE)return applyOp(r,{type:'note',kind:kind,text:text});
   var n={by:SESSION.name,text:text,t:Date.now()};if(kind!=='note')n.kind=kind;r.notes.push(n);saveR();return true;
 }
-async function opMessage(r,text,files,letter){
-  if(LIVE){var op={type:'message',text:text,files:files||[]};if(letter)op.letter=letter;return applyOp(r,op)}
-  var m={from:'Committee',by:SESSION.name,text:text,files:files||[],t:Date.now()};if(letter)m.letter=letter;r.messages.push(m);saveR();return true;
+async function opMessage(r,text,files,letter,tag){
+  if(LIVE){var op={type:'message',text:text,files:files||[]};if(letter)op.letter=letter;if(tag)op.tag=tag;return applyOp(r,op)}
+  var m={from:'Committee',by:SESSION.name,text:text,files:files||[],t:Date.now()};if(letter)m.letter=letter;if(tag)m.tag=tag;r.messages.push(m);saveR();return true;
 }
 async function opAmounts(r,ap,di){
   var op={type:'amounts'};if(ap!=null)op.approved=ap;if(di!=null)op.disbursed=di;
@@ -1064,19 +1082,55 @@ function saveB64(name,mime,b64){
   var bin=atob(b64),u8=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([u8],{type:mime}));a.download=name||'document';document.body.appendChild(a);a.click();a.remove();
 }
+/* ---------- opening files: a viewer with real Open and Download buttons (no pop-ups, works on phones) ---------- */
+function closeFileSheet(){var o=document.getElementById('filedlg');if(o){if(o._url){try{URL.revokeObjectURL(o._url)}catch(e){}}o.remove()}}
+function fileSheetShell(name,extra,buttons){
+  closeFileSheet();
+  var d=document.createElement('div');d.className='lb pd';d.id='filedlg';d.setAttribute('role','dialog');d.setAttribute('aria-label','File');
+  d.innerHTML='<div class="pcard" style="max-width:520px;text-align:center"><h2 style="margin:0 0 6px;overflow-wrap:anywhere">'+esc(name)+'</h2>'+extra
+    +'<div class="flex" style="justify-content:center;margin-top:12px">'+buttons+'<button class="btn ghost" id="fclose">Close</button></div>'
+    +'<p class="hint" style="margin-top:12px">If Open does nothing on your phone, tap Download, then open the file from your Downloads or Files app.</p></div>';
+  d.addEventListener('click',function(e){if(e.target===d||e.target.id==='fclose')closeFileSheet()});
+  document.body.appendChild(d);return d;
+}
+function fileSheet(name,mime,b64){
+  var bin=atob(b64),u8=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+  var url=URL.createObjectURL(new Blob([u8],{type:mime}));
+  var isImg=/^image\/(jpeg|png)$/.test(mime);
+  var extra='<p class="hint" style="margin:0 0 10px">'+Math.max(1,Math.round(u8.length/1024))+' KB</p>'
+    +(isImg?'<img src="data:'+esc(mime)+';base64,'+esc(b64)+'" alt="'+esc(name)+'" style="max-width:100%;max-height:55vh;border-radius:10px">':'');
+  var d=fileSheetShell(name,extra,'<a class="btn primary" href="'+url+'" target="_blank" rel="noopener">Open</a><a class="btn dark" href="'+url+'" download="'+esc(name)+'">Download</a>');
+  d._url=url;return d;
+}
+function fileErr(e){
+  var c=e&&e.code;
+  if(c==='PGRST205'||c==='42P01')return 'File storage is not set up yet. Ask the Super Administrator to run the security update (security-migration.sql).';
+  if(c==='42501'||c==='PGRST301'||c==='401'||c==='403')return 'You are not allowed to open this file. Sign in again with your two-step code.';
+  return 'Could not open the file. Please try again.';
+}
 async function openStaffFile(fid){
+  toast('Opening...');
   var r=await sb.from('member_files').select('name,mime,data_b64').eq('id',fid).maybeSingle();
-  if(r.error||!r.data){toast('Could not open the file.');return}
-  saveB64(r.data.name,r.data.mime,r.data.data_b64);
+  if(r.error||!r.data){toast(fileErr(r.error));return}
+  fileSheet(r.data.name,r.data.mime,r.data.data_b64);
 }
 async function downloadMemberFile(fid){
+  toast('Opening...');
   var res=await sb.rpc('get_member_file',{p_ref:state.trackRef,p_last4:state.track4||'',p_fid:fid});
-  if(res.error||!res.data){toast('Could not open that file.');return}
-  saveB64(res.data.name,res.data.mime,res.data.data);
+  if(res.error||!res.data){toast('Could not open that file. Check your connection and try again.');return}
+  fileSheet(res.data.name,res.data.mime,res.data.data);
 }
-function openFile(path){
-  var w=window.open('','_blank');
-  sb.storage.from('attachments').createSignedUrl(path,300).then(function(r){if(r.data&&w){w.location=r.data.signedUrl}else{if(w)w.close();toast('Could not open the file')}});
+async function openFile(path){
+  toast('Opening...');
+  var r=await sb.storage.from('attachments').createSignedUrl(path,300);
+  if(r.error||!r.data){toast('Could not open the file. Sign in again with your two-step code and try once more.');return}
+  var nm=String(path).split('/').pop().replace(/^[0-9a-f]{32}_/,'');
+  fileSheetShell(nm,'<p class="hint" style="margin:0">Older attachment. The link works for 5 minutes.</p>','<a class="btn primary" href="'+esc(r.data.signedUrl)+'" target="_blank" rel="noopener">Open</a>');
+}
+function openInlineFile(i,ref){
+  var r=getR(ref||state.openReport);var f=r&&r.files&&r.files[i];
+  if(!f||!f.data){toast('This file is not stored.');return}
+  try{saveB64(f.name,f.mime||'application/octet-stream',f.data)}catch(e){toast('Could not open the file.')}
 }
 function exportCSV(){
   var cols=['Reference','Submitted','Category','Option','Status','Name','Student ID','Phone','Email','Programme','Level','Amount','Description','Approved amount','Disbursed amount'];
@@ -1174,10 +1228,16 @@ function reportDetail(ref){
   +(r.amount?'<p><b>Amount requested:</b> GHS '+esc(r.amount)+'</p>':'')
   +'<p><b>Approved amount:</b> '+approvedLine(r)+'</p>'
   +'<p><b>Situation:</b><br>'+esc(r.desc).replace(/\n/g,'<br>')+'</p>'
-  +'<p style="margin:0"><b>Attachments:</b> '+(r.files.length?'<span class="flex">'+r.files.map(function(f){return (LIVE&&f.fid)?'<button class="btn ghost small" onclick="openStaffFile(\''+esc(f.fid)+'\')">'+esc(f.name)+'</button>':((LIVE&&f.path)?'<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>':esc(f.name)+' ('+Math.round(f.size/1024)+' KB)')}).join('')+'</span>':'None')+'</p></div>';
+  +'<p style="margin:0"><b>Attachments:</b> '+(r.files.length?'<span class="flex">'+r.files.map(function(f,fi){
+    if(LIVE&&f.fid)return '<button class="btn ghost small" onclick="openStaffFile(\''+esc(f.fid)+'\')">'+esc(f.name)+'</button>';
+    if(LIVE&&f.path)return '<button class="btn ghost small" onclick="openFile(\''+esc(f.path)+'\')">'+esc(f.name)+'</button>';
+    if(f.data)return '<button class="btn ghost small" onclick="openInlineFile('+fi+',\''+esc(r.ref)+'\')">'+esc(f.name)+'</button>';
+    return '<span class="badge">'+esc(f.name)+' (not stored)</span>';
+  }).join('')+'</span>':'None')+'</p></div>';
   h+='<h3 style="margin-top:22px">Change status</h3><div class="flex"><select id="ns" style="max-width:280px">'+STATUSES.map(function(s){return '<option'+(r.status===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select><button class="btn dark small" onclick="setStatus(\''+r.ref+'\')">Update status</button></div>';
+  h+=moneyPanel(r);
   h+=docsPanel(r);
-  h+='<h3 style="margin-top:22px">Conversation with member</h3>'+(r.messages.length?r.messages.map(function(m,mi){return '<div class="msg '+(m.from==='Committee'?'c':'m')+'"><small>'+esc(m.from)+(m.by?' ('+esc(m.by)+')':'')+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+msgFiles(m,true)+msgLetter(m,mi,true)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>')
+  h+='<h3 style="margin-top:22px">Conversation with member</h3>'+(r.messages.length?r.messages.map(function(m,mi){return '<div class="msg '+msgCls(m)+'"><small>'+esc(m.from)+(m.by?' ('+esc(m.by)+')':'')+' &middot; '+esc(fmt(m.t))+'</small><br>'+esc(m.text)+msgFiles(m,true)+msgLetter(m,mi,true)+'</div>'}).join(''):'<p class="hint">No messages yet.</p>')
   +'<label for="am2">Message to member</label><textarea id="am2" placeholder="Please provide additional information about..."></textarea><label for="am2f">Attach documents to send to the member <span class="hint">(optional: PDF, JPG or PNG, up to 3 files, each up to 200 KB. Compress larger files first)</span></label><input type="file" id="am2f" multiple accept=".pdf,.jpg,.jpeg,.png" style="width:100%;padding:10px;border:2px dashed var(--line);border-radius:12px;background:var(--surface)"><div class="flex" style="margin-top:10px"><button class="btn dark small" onclick="adminMsg(\''+r.ref+'\')">Send message</button><button class="btn ghost small" onclick="$(\'am2\').value=\'Please provide additional information so we can continue reviewing your request.\'">Use sample request</button></div>';
   h+='<h3 style="margin-top:22px">Internal notes <span class="hint">(never shown to the member)</span></h3>'+(r.notes.length?r.notes.filter(function(n){return n.kind!=='action'}).map(function(n){return '<div class="msg" style="background:#fff1cc;color:#4a3300"><small>'+esc(n.by)+' &middot; '+esc(fmt(n.t))+'</small><br>'+esc(n.text)+'</div>'}).join(''):'<p class="hint">No notes.</p>')
   +'<label for="nt">Add a note</label><textarea id="nt"></textarea><button class="btn ghost small" style="margin-top:10px" onclick="addNote(\''+r.ref+'\')">Save note</button>';
@@ -1389,6 +1449,8 @@ var TPL_DEFAULT={
   release_request:'The approved amount is {{amountLine}}. We therefore respectfully request the release of the approved funds so that the Welfare Committee can disburse the support to the member.',
   release_close:'The Welfare Committee sincerely appreciates the continued support of the leadership towards the welfare of members. We respectfully encourage the leadership to keep supporting members in their times of need, and we remain committed to maintaining and strengthening effective coordination and collaboration with the leadership.',
   ack_statement:'I, {{name}}, hereby acknowledge that I have received the approved welfare support of {{amountLine}} in full from the Welfare Committee of the Nurses and Midwives Students\u2019 Association (NAMSA-PU), Pentecost University.',
+  ready_message:'Dear {{name}}, {{sympathy}}Good news: your {{categoryFull}} welfare request ({{ref}}) has been approved and the funds{{amountPhrase}} are now ready for release.\n\n{{instructions}}\n\nThank you.\nNAMSA-PU Welfare Committee',
+  ready_instructions:'Please contact the Welfare Committee on {{welfarePhone}} to arrange how you will receive the funds. Kindly bring your student ID card and quote your tracking code ({{ref}}). You can also reply to this message on the Track My Report page.',
   wa_message:'Dear {{name}}, {{sympathy}}the NAMSA-PU Welfare Committee is pleased to inform you that your welfare application ({{ref}}) has been approved{{amountPhrase}}. {{letterPhrase}}To view it, open {{siteUrl}} , tap Track My Report, and enter your tracking code and the last 4 digits of this phone number.'
 };
 var TPL=(function(){var o={};for(var k in TPL_DEFAULT)o[k]=TPL_DEFAULT[k];return o})();
@@ -1406,6 +1468,7 @@ var TPL_META=[
   ['Request for release of funds (to the President)',[
     ['release_subject','Subject line'],['release_intro','Opening paragraph'],['reason','Reason sentence'],['release_request','Request paragraph'],['release_close','Closing paragraph']]],
   ['Disbursement and acknowledgement form',[['ack_statement','Acknowledgement statement']]],
+  ['Money-is-ready notification (website message and WhatsApp)',[['ready_message','Message'],['ready_instructions','Instructions included in the message']]],
   ['WhatsApp message to the applicant after approval',[['wa_message','Message text']]]
 ];
 function tplGet(key,kind){var k2=key+'__'+kind;if(TPL[k2]!=null)return TPL[k2];return TPL[key]!=null?TPL[key]:''}
@@ -1416,7 +1479,8 @@ function baseVars(d){
     category:d.category||'',categoryUpper:String(KIND_LABEL[d.kind]||d.category||'').toUpperCase(),categoryLower:String(d.category||'welfare support').toLowerCase(),
     relationship:d.rel||'family member',ref:d.ref||'',date:f.date||'',deadline:f.deadline||'',
     amount:a?money(f.amount):'',amountWords:a?amountWords(f.amount):'',amountLine:a?moneyLine(f.amount):'GH\u20B5 ______________',
-    idParen:d.sid?' ('+d.sid+')':'',subParen:d.sub?' ('+String(d.sub).toLowerCase()+')':'',siteUrl:siteUrl()};
+    idParen:d.sid?' ('+d.sid+')':'',subParen:d.sub?' ('+String(d.sub).toLowerCase()+')':'',siteUrl:siteUrl(),
+    categoryFull:(d.category||'')+(d.sub?' ('+d.sub+')':''),welfarePhone:((C.contact&&C.contact.phones)||[])[0]||'',sympathy:d.kind==='funeral'?'We are deeply sorry for your loss. ':''};
 }
 function tplPurpose(d,second){
   var k=(d.kind==='funeral'||d.kind==='naming'||d.kind==='wedding')?d.kind:'other';
@@ -1779,7 +1843,7 @@ async function waOpen(){
   logit(SESSION.name,'WhatsApp approval message opened for '+r.ref+'.');waClose();
 }
 function msgLetter(m,mi,admin){
-  if(!m||!m.letter)return '';
+  if(!m||!m.letter||!m.letter.d)return '';
   return '<div style="margin-top:8px"><button class="btn primary small" onclick="openMsgLetter('+mi+','+(admin?1:0)+')">Open acceptance letter</button></div>';
 }
 function openMsgLetter(mi,admin){
@@ -1791,19 +1855,38 @@ function openMsgLetter(mi,admin){
   document.body.appendChild(el);
 }
 
-/* ---------- advertisement space ---------- */
-function adsSection(){
+/* ---------- advertisement banner (top of every page) ---------- */
+function adsTop(){
   try{
     var A=C.ads;if(!A||A.enabled===false)return '';
     var today=new Date().toISOString().slice(0,10);
     var list=(A.items||[]).filter(function(x){return x&&x.active!==false&&x.image&&(!x.from||x.from<=today)&&(!x.to||x.to>=today)});
-    var cards=list.map(function(x){
-      var inner='<img src="'+esc(x.image)+'" alt="'+esc(x.name||'Advertisement')+'" loading="lazy">'+(x.name?'<span class="adz-cap">'+esc(x.name)+'</span>':'');
-      return x.url&&safeUrl(x.url)!=='#'?'<a class="adz-card" href="'+esc(safeUrl(x.url))+'" target="_blank" rel="sponsored noopener noreferrer">'+inner+'</a>':'<div class="adz-card">'+inner+'</div>';
+    if(!list.length)return '<div class="wrap"><div class="adtop-empty">Advertising space available. '+esc(A.contact||'')+'</div></div>';
+    var slides=list.map(function(x,i){
+      var inner='<img src="'+esc(x.image)+'" alt="'+esc(x.name||'Advertisement')+'"><span class="adtop-tag">Ad</span>'+(x.name?'<span class="adtop-name">'+esc(x.name)+'</span>':'');
+      var cls='adtop-slide'+(i===0?' on':'');
+      return (x.url&&safeUrl(x.url)!=='#')?'<a class="'+cls+'" href="'+esc(safeUrl(x.url))+'" target="_blank" rel="sponsored noopener noreferrer">'+inner+'</a>':'<div class="'+cls+'">'+inner+'</div>';
     }).join('');
-    return '<section class="blk" style="padding-top:0"><div class="wrap"><aside class="adz" aria-label="Advertisements"><div class="adz-h"><span>'+esc(A.heading||'Advertisements')+'</span><small>Advertisements are not part of the Welfare Committee\u2019s services.</small></div>'
-      +(cards?'<div class="adz-grid">'+cards+'</div>':'<div class="adz-empty">Advertising space available.<br><small>'+esc(A.contact||'')+'</small></div>')+'</aside></div></section>';
+    var dots=list.length>1?'<div class="adtop-dots">'+list.map(function(x,i){return '<button class="adtop-dot'+(i===0?' on':'')+'" aria-label="Show advertisement '+(i+1)+'" onclick="adGo('+i+')"></button>'}).join('')+'</div>':'';
+    return '<div class="wrap"><aside class="adtop-box" aria-label="Advertisement">'+slides+dots+'</aside></div>';
   }catch(e){return ''}
+}
+function adGo(i){
+  var host=document.getElementById('adtop');if(!host||!host.querySelectorAll)return;
+  var sl=host.querySelectorAll('.adtop-slide'),dt=host.querySelectorAll('.adtop-dot');
+  for(var j=0;j<sl.length;j++){sl[j].classList.toggle('on',j===i)}
+  for(var k=0;k<dt.length;k++){dt[k].classList.toggle('on',k===i)}
+  window._adI=i;
+}
+function drawAdTop(){
+  var host=document.getElementById('adtop');if(!host)return;
+  clearInterval(window._adT);
+  if(route()==='admin'){host.innerHTML='';host.style.display='none';return}
+  var h=adsTop();host.innerHTML=h;host.style.display=h?'':'none';
+  var n=host.querySelectorAll?host.querySelectorAll('.adtop-slide').length:0;
+  window._adI=0;
+  var still=false;try{still=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)}catch(e){}
+  if(n>1&&!still){window._adT=setInterval(function(){if(!document.getElementById('adtop'))return;adGo(((window._adI||0)+1)%n)},6000)}
 }
 function adSet(i,k,v){if(!C.ads.items[i])return;C.ads.items[i][k]=v;saveC();toast('Saved')}
 function adUrl(i,v){v=String(v||'').trim();if(v&&!/^https:\/\//i.test(v)){toast('The link must start with https://');render();return}adSet(i,'url',v)}
@@ -1822,8 +1905,8 @@ function adImg(i,input){
 }
 ADMIN.ads=function(){
   var A=C.ads;
-  var h='<h2>Advertisements</h2><p class="hint">This is a separate, clearly labelled space on the home page. It never changes the rest of the website. Each picture must be 200 KB or smaller, and links must start with https://.</p>';
-  h+='<div class="edit-item"><div class="check"><input type="checkbox" id="ad_on" '+(A.enabled!==false?'checked':'')+' onchange="C.ads.enabled=this.checked;saveC();toast(\'Saved\')"><label for="ad_on" style="margin:0">Show the advertisement space on the home page</label></div>'
+  var h='<h2>Advertisements</h2><p class="hint">Active advertisements appear in a banner at the very top of every page, in a clearly labelled box that never covers the menu or content. Best picture size: 1200 by 400 pixels (3 to 1), 200 KB or smaller. Several active advertisements rotate every 6 seconds. Links must start with https://.</p>';
+  h+='<div class="edit-item"><div class="check"><input type="checkbox" id="ad_on" '+(A.enabled!==false?'checked':'')+' onchange="C.ads.enabled=this.checked;saveC();toast(\'Saved\')"><label for="ad_on" style="margin:0">Show the advertisement banner at the top of the website</label></div>'
     +'<label for="ad_h">Heading</label><input type="text" id="ad_h" value="'+esc(A.heading)+'" onchange="C.ads.heading=this.value;saveC();toast(\'Saved\')">'
     +'<label for="ad_c">Message shown when there are no active advertisements</label><input type="text" id="ad_c" value="'+esc(A.contact)+'" onchange="C.ads.contact=this.value;saveC();toast(\'Saved\')"></div>';
   h+=A.items.map(function(x,i){
@@ -1838,6 +1921,77 @@ ADMIN.ads=function(){
   h+='<button class="btn dark small" onclick="addAd()">Add an advertisement</button>';
   return h;
 };
+
+/* ---------- "Money is ready" notification ---------- */
+function msgCls(m){return (m.from==='Committee'?'c':'m')+(m.tag==='money_ready'?' ready':'')}
+function moneyAmount(r){var ap=Number(r.approved_amount)||0;if(ap>0)return ap;var f=fixedAmount(catKind(r));return f!=null?f:null}
+function moneyReadyText(r){
+  var k=catKind(r),amt=moneyAmount(r);
+  var d={kind:k,rel:relationOf(r),applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub||'',ref:r.ref,
+    fields:{amount:amt?String(amt):'',deadline:'',date:fmtDay(Date.now())}};
+  var v=baseVars(d);v.amountPhrase=amt?' of '+money(amt):'';
+  v.instructions=tplFill(TPL.ready_instructions,v);
+  return tplFill(TPL.ready_message,v);
+}
+function moneyFlags(r){
+  var web=null,wa=null;
+  (r.messages||[]).forEach(function(m){if(m.tag==='money_ready')web={t:m.t,text:m.text}});
+  (r.notes||[]).forEach(function(n){
+    var x=String(n.text||'');
+    if(!web&&x.indexOf('[money-ready] Website')===0)web={t:n.t,text:''};
+    if(n.kind==='whatsapp'&&x.indexOf('[money-ready] WhatsApp')===0)wa={t:n.t,auto:/automatically/.test(x)};
+  });
+  return {web:web,wa:wa};
+}
+function lastCommitteeText(r){var t='';(r.messages||[]).forEach(function(m){if(m.from==='Committee'&&m.text)t=m.text});return t}
+function moneyPanel(r){
+  if(!SESSION||(SESSION.role!=='super'&&SESSION.role!=='welfare'))return '';
+  if(catKind(r)==='issue')return '';
+  var f=moneyFlags(r),ok=['Approved','Partially Approved'].indexOf(r.status)>-1,phone=canMsgPhone(r);
+  var wa=!phone?'<span class="badge">Not available</span> <span class="hint">no phone number on this request</span>'
+    :(f.wa?'<span class="badge '+(f.wa.auto?'good':'warn')+'">'+(f.wa.auto?'Sent automatically':'Opened for sending')+'</span> <span class="hint">'+esc(fmt(f.wa.t))+(f.wa.auto?'':'. WhatsApp cannot confirm delivery.')+'</span>':'<span class="badge">Not sent yet</span>');
+  var h='<h3 style="margin-top:22px">Money is ready</h3><div class="card">'
+    +'<p style="margin:0 0 8px"><b>Website notification:</b> '+(f.web?'<span class="badge good">Sent</span> <span class="hint">'+esc(fmt(f.web.t))+'</span>':'<span class="badge">Not sent yet</span>')+'</p>'
+    +'<p style="margin:0 0 12px"><b>WhatsApp:</b> '+wa+'</p>';
+  if(!ok)h+='<p class="hint" style="margin:0 0 10px">Set the status to Approved first.</p>';
+  h+='<div class="flex"><button class="btn primary" '+(ok?'':'disabled ')+'onclick="sendMoneyReady(\''+esc(r.ref)+'\')">'+(f.web?'Money Is Ready \u2013 Send Message again':'Money Is Ready \u2013 Send Message')+'</button>'
+    +(f.web&&phone?'<button class="btn ghost" onclick="moneyWhatsApp(\''+esc(r.ref)+'\')">Send the same message on WhatsApp</button>':'')+'</div></div>';
+  return h;
+}
+async function sendMoneyReady(ref){
+  if(!SESSION||(SESSION.role!=='super'&&SESSION.role!=='welfare')){toast('Only authorised administrators can do this.');return}
+  var r=getR(ref);if(!r)return;
+  if(['Approved','Partially Approved'].indexOf(r.status)<0){toast('Set the status to Approved first.');return}
+  var f=moneyFlags(r),text=moneyReadyText(r);
+  if(!confirm((f.web?'A "Money is ready" message was already sent on '+fmt(f.web.t)+'. Send it again?\n\n':'Send this "Money is ready" message to '+r.name+' on the website?\n\n')+text))return;
+  if(!await opMessage(r,text,[],null,'money_ready'))return;
+  await opNote(r,'action','[money-ready] Website notification sent to the member.');
+  toast('Notification sent to the member\u2019s tracking page');render();
+  showMoneyDone(r,text);
+}
+function showMoneyDone(r,text){
+  var old=document.getElementById('moneydlg');if(old)old.remove();
+  var phone=canMsgPhone(r);
+  var d=document.createElement('div');d.className='lb pd';d.id='moneydlg';d.setAttribute('role','dialog');d.setAttribute('aria-label','Notification sent');
+  d.innerHTML='<div class="pcard" style="max-width:520px"><h2 style="margin:0 0 8px">Notification sent</h2>'
+    +'<p style="margin:0 0 10px"><span class="badge good">Website: sent</span> <span class="badge">WhatsApp: not sent yet</span></p>'
+    +'<p class="hint" style="margin:0 0 6px">This exact message is now on '+esc(r.name)+'\u2019s Track My Report page:</p><div class="note" style="white-space:pre-wrap">'+esc(text)+'</div>'
+    +(phone?'<button class="btn primary" style="width:100%;margin-bottom:8px" onclick="moneyWhatsApp(\''+esc(r.ref)+'\')">Send the same message on WhatsApp</button><p class="hint" style="margin:0 0 10px">WhatsApp opens with the message ready. Tap Send in WhatsApp to deliver it.</p>':'<p class="hint">No phone number on this request, so WhatsApp is not available.</p>')
+    +'<button class="btn ghost" style="width:100%" onclick="document.getElementById(\'moneydlg\').remove()">Close</button></div>';
+  d.addEventListener('click',function(e){if(e.target===d)d.remove()});
+  document.body.appendChild(d);
+}
+async function moneyWhatsApp(ref){
+  var r=getR(ref);if(!r)return;
+  if(!SESSION||(SESSION.role!=='super'&&SESSION.role!=='welfare')){toast('Only authorised administrators can do this.');return}
+  var f=moneyFlags(r),text=(f.web&&f.web.text)||lastCommitteeText(r);
+  if(!f.web||!text){toast('Send the website notification first.');return}
+  if(!canMsgPhone(r)){toast('No phone number on this request.');return}
+  window.open('https://wa.me/'+waNum(r.phone)+'?text='+encodeURIComponent(text),'_blank','noopener');
+  await opNote(r,'whatsapp','[money-ready] WhatsApp opened for sending.');
+  var o=document.getElementById('moneydlg');if(o)o.remove();
+  toast('WhatsApp opened. Tap Send there to deliver the message.');render();
+}
 function getR(ref){return REPORTS.filter(function(x){return x.ref===ref})[0]}
 async function setStatus(ref){
   var r=getR(ref),s=$('ns').value;if(!r||s===r.status)return;
