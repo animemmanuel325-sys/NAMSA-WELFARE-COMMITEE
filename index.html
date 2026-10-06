@@ -227,6 +227,14 @@ a.act:hover{background:var(--info-bg)}
 .adtop-dot.on::after{background:#fff}
 .adtop-empty{display:flex;align-items:center;justify-content:center;min-height:52px;padding:10px 14px;border:2px dashed var(--line);border-radius:14px;color:var(--muted);font-weight:600;text-align:center;font-size:.92rem}
 
+
+.prose .sec ul.rt,.prose .sec ol.rt,ul.rt{margin:0 0 1em;padding-left:1.3em}
+.prose .sec li,ul.rt li{margin-bottom:.35em}
+.prose .sec>*:last-child{margin-bottom:0}
+.soToc{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.soLink{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--brand);min-height:36px}
+.soLink:hover{border-color:var(--go)}
+
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:12px 22px;border-radius:14px;border:2px solid transparent;font-weight:700;cursor:pointer;text-decoration:none;text-align:center}
 .btn.primary{background:var(--sun);color:var(--sun-ink)}
@@ -481,9 +489,9 @@ var DEFAULTS={
     {id:'e6',name:'Name to be added',position:'PRO',desc:'',photo:''},
     {id:'e7',name:'Name to be added',position:'Organizer',desc:'',photo:''}
   ],
-  docs:{head:'Anim Emmanuel',secretary:'Victoria Efua Ainoo Morrison',treasurer:'',president:'The President, NAMSA-PU',patron:'The Patron, NAMSA-PU',controller:'The Financial Controller, NAMSA-PU',amounts:{funeral:500,naming:250,wedding:300}},
+  docs:{head:'Anim Emmanuel',secretary:'Victoria Efua Ainoo Morrison',treasurer:'',president:'The President, NAMSA-PU',generalSecretary:'The General Secretary, NAMSA-PU',patron:'The Patron, NAMSA-PU',controller:'The Financial Controller, NAMSA-PU',amounts:{funeral:500,naming:250,wedding:300}},
   ads:{enabled:true,heading:'Advertisements',contact:'Want to advertise here? Please contact the NAMSA-PU Welfare Committee.',items:[]},
-  letter:{to:'The Financial Controller, NAMSA',cc:'The General Secretary, NAMSA; The President, NAMSA',head:'Emmanuel Anim',sec:'Victoria Efua Ainoo Morrison'},
+  letter:{to:'The Financial Controller, NAMSA',cc:'The General Secretary, NAMSA-PU; The President, NAMSA-PU; The Patron, NAMSA-PU',head:'Emmanuel Anim',sec:'Victoria Efua Ainoo Morrison'},
   committeeV:2,
   committee:[
     {id:'c1',name:'Name to be added',position:'Welfare Chairperson',desc:'',photo:'',portfolio:'',pics:[]},
@@ -506,14 +514,10 @@ var DEFAULTS={
     {h:'How decisions are communicated',p:'You will see the decision on the Track My Report page and receive an email if you gave one. The committee may also contact you by your preferred method.'},
     {h:'Member responsibilities',p:'Give honest and accurate information, respond promptly when we ask for more, and respect the privacy of other members.'},
     {h:'Confidentiality',p:'Reports are visible only to authorised Welfare Committee administrators, and only for welfare purposes. Nothing you submit is shown publicly.'},
-    {h:'Relevant rules',p:'The committee follows the Welfare Standing Orders. See the Welfare Guidelines page for the full text.'}
+    {h:'Relevant rules',p:'The committee follows the Welfare Standing Orders. See the Standing Orders page for the full text.'}
   ],
-  guidelines:{intro:'These are the official rules and procedures that govern the Welfare Committee. Replace the sample text with the approved Standing Orders.',
-    sections:[
-      {h:'Eligibility',p:'Sample: A member must be financially registered with NAMSA for the current academic year to receive welfare support.'},
-      {h:'Procedure',p:'Sample: Requests are submitted on this website, reviewed by the committee, and communicated to the member within an agreed period.'},
-      {h:'Amounts and limits',p:'Sample: Support amounts are set by the Welfare Constitution and may be reviewed each year.'}
-    ],
+  guidelines:{v:2,intro:"Nurses and Midwives Students’ Association (NAMSA-PU), Pentecost University. Welfare Committee. Please read these standing orders carefully before you apply for welfare support.",
+    sections:[{"h": "1. Introduction", "p": "The NAMSA-PU Welfare Committee is established to promote the welfare, unity, care, and mutual support of members of the Nurses and Midwives Students’ Association at Pentecost University.\n\nThe Committee seeks to provide assistance to eligible members during approved occasions and difficult circumstances, while ensuring fairness, accountability, transparency, and responsible management of welfare funds.\n\nEvery member is encouraged to understand and comply with these standing orders to ensure the effective operation of the Welfare Committee."}, {"h": "2. Objectives of the Welfare Committee", "p": "The objectives of the Committee are to:\n\n1. Provide approved welfare support to eligible NAMSA-PU members.\n2. Promote unity, compassion, and a sense of belonging among members.\n3. Establish a fair and transparent process for receiving and reviewing welfare applications.\n4. Ensure that welfare funds are used for their intended purposes.\n5. Encourage members to fulfil their financial and other obligations to the Association.\n6. Maintain proper records of applications, decisions, and disbursements.\n7. Promote accountability and responsible use of the Association’s welfare resources."}, {"h": "3. Leadership and Composition", "p": "The Welfare Committee shall comprise the following leadership structure:\n\n1. Chairperson/Head of the Welfare Committee\n2. Secretary\n3. Treasurer\n4. Committee Members\n\nThe Chairperson/Head shall provide leadership, coordinate the activities of the Committee, oversee the review of applications, and ensure that decisions are made in accordance with the standing orders.\n\nThe Secretary shall maintain records of meetings, applications, decisions, correspondence, and other relevant documentation.\n\nThe Treasurer shall maintain proper financial records of welfare funds, approved disbursements, receipts, and other financial transactions in collaboration with the appropriate NAMSA financial authorities.\n\nCommittee members shall participate in the assessment of applications, deliberations, welfare activities, and other responsibilities assigned to them.\n\nAll officers and members shall act with integrity, fairness, confidentiality, and respect for every applicant."}, {"h": "4. Categories of Welfare Support", "p": "The Committee shall consider applications under the approved welfare categories, including:\n\n- **Funeral support:** Assistance following the death of an eligible member’s father or mother.\n- **Naming ceremony support:** Assistance for an eligible member in connection with an approved naming ceremony.\n- **Wedding support:** Assistance for an eligible member in connection with an approved wedding.\n- **Other approved welfare needs:** Applications for other circumstances may be considered subject to the Committee’s assessment, the applicable welfare policy, and the availability of funds.\n- **Welfare loan requests:** Requests for business or other approved purposes may be considered under the applicable loan rules, subject to eligibility, approval, and available funds.\n\nThe applicable support amounts and conditions shall be those officially approved by NAMSA-PU and published on the welfare portal. Applying does not automatically guarantee approval or payment."}, {"h": "5. Eligibility Requirements", "p": "To qualify for consideration for welfare support, an applicant must:\n\n1. Be a recognised and eligible member of NAMSA-PU.\n2. Have fulfilled the applicable NAMSA dues and financial obligations.\n3. Meet the specific requirements of the welfare category being applied for.\n4. Provide accurate, complete, and verifiable information.\n5. Submit the application through the official NAMSA-PU Welfare Portal and follow the prescribed procedure.\n6. Cooperate with the Committee when additional information or supporting documents are required.\n7. Comply with the standing orders and other applicable Association policies.\n\n**Important notice on dues:** Members who have outstanding NAMSA dues or other applicable mandatory financial obligations shall not qualify for welfare support unless an authorised exemption, waiver, or payment arrangement is expressly permitted under the Association’s approved rules.\n\nMembers are therefore strongly encouraged to pay their NAMSA dues promptly and keep their financial obligations up to date."}, {"h": "6. Application Procedure", "p": "All members seeking welfare assistance must follow the official application procedure:\n\n1. Visit the official NAMSA-PU Welfare Portal.\n2. Select the appropriate welfare category.\n3. Read the requirements and instructions for that category.\n4. Complete the application form accurately.\n5. Upload the required supporting documents in the accepted format and within the portal’s stated file-size limit (200 KB for each file).\n6. Submit the application and retain the tracking code generated by the system.\n7. Use the tracking feature on the portal to monitor the progress of the application.\n8. Respond promptly if the Committee requests clarification or additional documentation.\n9. Wait for the Committee’s official decision and follow any further instructions communicated to you.\n\nMembers should not submit duplicate applications for the same request unless instructed by the Committee. Applicants should also keep their tracking codes private and use the official portal for application-related updates."}, {"h": "7. Review, Approval and Rejection of Applications", "p": "Every application shall be reviewed by the Welfare Committee in accordance with the applicable rules, eligibility requirements, supporting evidence, and available resources.\n\nAn application may be approved when the applicant meets the requirements and the Committee is satisfied that the request qualifies for assistance.\n\nAn application may be declined for reasons including, but not limited to:\n\n- Outstanding NAMSA dues or failure to meet applicable financial obligations.\n- Failure to meet the eligibility requirements for the selected welfare category.\n- Submission of incomplete, inaccurate, misleading, or unverifiable information.\n- Failure to provide required supporting documents.\n- Evidence of fraudulent activity, deliberate misrepresentation, or abuse of the welfare system.\n- A request that falls outside the approved scope of welfare support.\n- Failure to comply with applicable welfare policies or established procedures.\n- Insufficient available funds, where the applicable policy permits this to be a basis for declining or deferring support.\n\nThe Committee shall endeavour to treat all applicants fairly and consistently. Decisions must be based on relevant evidence and established rules rather than personal relationships, favouritism, discrimination, or personal disagreements.\n\nWhere appropriate, an applicant may be informed of the reason for rejection and the steps required to correct an issue or seek a review."}, {"h": "8. Notification, Collection of Approved Support and Witness", "p": "After an application is approved, the member will be notified on the Track My Report page of the welfare portal and, where a phone number was provided, may also be contacted on WhatsApp. When the funds are ready, the Committee will send a “Money is ready” message with the collection instructions.\n\nTo receive approved support, the member must:\n\n1. **Bring a friend to serve as a witness.**\n2. Sign the Welfare Support Disbursement and Acknowledgement Form to confirm that the approved amount has been received in full.\n3. Make sure the witness writes their full name and phone number, and signs and dates the form in the space provided.\n\nThe witness confirms that they were present and saw the member receive the approved amount."}, {"h": "9. Official Documents and Copies", "p": "Welfare documents are prepared through the welfare portal. Every document involves the President, the General Secretary and the Patron of NAMSA-PU, and documents that involve finance also involve the Financial Controller:\n\n- **Welfare Support Acceptance Letter:** sent to the member, with copies to the President, the General Secretary and the Patron.\n- **Request for Release of Welfare Support Funds:** addressed to the President, with copies to the General Secretary, the Patron and the Financial Controller.\n- **Welfare Support Disbursement and Acknowledgement Form:** signed by the member and the witness when the funds are received, with copies to the President, the General Secretary, the Patron and the Financial Controller.\n\nEvery document carries signature spaces for the Welfare Committee Head and the Welfare Committee Secretary."}, {"h": "10. Dos and Don’ts for Members", "p": "**DO:**\n\n- Pay your NAMSA dues and other applicable mandatory contributions promptly.\n- Read the standing orders before submitting an application.\n- Apply through the official welfare portal.\n- Provide truthful information and genuine supporting documents.\n- Select the correct welfare category.\n- Keep your application tracking code secure.\n- Monitor your application and respond to official requests.\n- Bring a friend as a witness when you come to receive approved support.\n- Respect the Committee’s procedures and communicate politely.\n- Use approved welfare assistance only for its intended purpose.\n- Report suspected fraud or misuse through the appropriate official channels.\n- Protect the privacy and dignity of fellow members who request assistance.\n\n**DON’T:**\n\n- Do not submit false information or forged documents.\n- Do not attempt to manipulate the application or tracking system.\n- Do not submit an application using another member’s identity without proper authorisation.\n- Do not pressure, threaten, or offer inducements to Committee members to secure approval.\n- Do not assume that submitting an application guarantees assistance.\n- Do not bypass the official portal or established application procedure.\n- Do not misuse welfare funds or misrepresent how approved assistance was used where accountability is required.\n- Do not disclose another applicant’s personal information or circumstances without proper authorisation.\n- Do not spread unverified information about an applicant or a Committee decision.\n- Do not engage in conduct intended to undermine the fairness, integrity, or proper functioning of the Committee."}, {"h": "11. Responsibilities of the Welfare Committee", "p": "The Committee shall:\n\n1. Review applications fairly and consistently.\n2. Verify eligibility and supporting information where necessary.\n3. Maintain appropriate records of applications and decisions.\n4. Protect applicants’ confidential information.\n5. Communicate decisions through approved channels.\n6. Ensure that welfare funds are handled responsibly and transparently.\n7. Avoid conflicts of interest and declare any personal interest that could affect an application review.\n8. Refer matters requiring higher-level authorisation to the appropriate NAMSA leadership.\n9. Keep members informed about applicable welfare rules and procedures.\n10. Recommend improvements to the welfare system when necessary.\n\nCommittee members shall not use their positions to obtain personal benefits, discriminate against applicants, or improperly influence decisions."}, {"h": "12. Confidentiality and Data Protection", "p": "All applications, supporting documents, contact details, financial information, and personal circumstances submitted through the welfare portal shall be treated as confidential.\n\nAccess to such information shall be restricted to authorised persons who require it to perform their official duties.\n\nCommittee members shall not share applicant information in public forums, personal group chats, or other unauthorised channels. Information may be disclosed only where properly authorised or required under applicable Association policies or law.\n\nThe developer and portal administrators shall maintain appropriate access controls and security measures to protect welfare records."}, {"h": "13. Use and Accountability of Welfare Funds", "p": "Welfare funds shall be used solely for authorised welfare purposes.\n\nAll approved disbursements should be properly recorded, including the beneficiary, approved category, amount, date, and relevant authorisation.\n\nNo Committee member shall independently promise or release Association funds without the required approval.\n\nFinancial records shall be maintained in accordance with NAMSA-PU’s approved financial procedures and made available to authorised officers for accountability and audit purposes."}, {"h": "14. Member Complaints and Review of Decisions", "p": "Members who believe that an application has been incorrectly assessed may submit a respectful request for clarification or review through the officially designated channel.\n\nA review request should state the issue clearly and include relevant supporting information.\n\nThe Committee shall consider such requests fairly, subject to its authority and applicable Association procedures. Where a matter involves a conflict of interest or falls outside the Committee’s authority, it may be referred to the appropriate NAMSA leadership.\n\nSubmitting a complaint or requesting a review shall not, by itself, result in unfair treatment or retaliation against a member."}, {"h": "15. Disciplinary Matters", "p": "Any suspected fraud, falsification of documents, misuse of funds, unauthorised disclosure of confidential information, or deliberate interference with the welfare process shall be referred to the appropriate authority for assessment.\n\nAny disciplinary action shall follow the applicable NAMSA-PU rules and procedures. No person shall be penalised solely on the basis of an unverified allegation."}, {"h": "16. Amendments to the Standing Orders", "p": "These standing orders may be reviewed and amended through the appropriate NAMSA-PU approval process when necessary.\n\nMembers shall be informed of significant changes to eligibility requirements, application procedures, approved support amounts, or other relevant policies.\n\nThe latest officially approved version shall govern the operation of the Welfare Committee."}, {"h": "17. Final Notice to All Members", "p": "The NAMSA-PU Welfare Committee exists to support eligible members and strengthen the spirit of unity, compassion, and mutual responsibility within our Association.\n\nEvery member is therefore encouraged to pay their NAMSA dues, comply with the standing orders, provide accurate information, and use the welfare portal responsibly.\n\nPlease remember that welfare assistance is subject to eligibility, proper review, approval, and the availability of funds where applicable. Submission of an application does not guarantee approval.\n\nLet us work together to build a welfare system founded on fairness, accountability, transparency, confidentiality, and genuine concern for one another.\n\nTogether, let us care for our members and strengthen NAMSA-PU.\n\nThank you.\n\n**NAMSA-PU Welfare Committee**\nServing Members with Care, Fairness and Accountability."}],
     docs:[]},
   privacy:[
     {h:'What we collect',p:'Only what is needed to process your request: your name, contact details, programme and level, a description of your situation, and any documents you choose to attach.'},
@@ -563,6 +567,9 @@ function ensureShape(){
     ['executives','committee','members','gallery','categories'].forEach(function(k){if(!Array.isArray(C[k]))C[k]=clone(DEFAULTS[k]||[])});
     C.aboutSections=fixSecs(C.aboutSections);C.privacy=fixSecs(C.privacy);C.steps=fixSecs(C.steps);
     if(!C.guidelines||typeof C.guidelines!=='object')C.guidelines=clone(DEFAULTS.guidelines);
+    if(/Replace the sample text/.test(C.guidelines.intro||'')){var kd=C.guidelines.docs;C.guidelines=clone(DEFAULTS.guidelines);C.guidelines.docs=Array.isArray(kd)?kd:[]}
+    if(!C.docs||typeof C.docs!=='object')C.docs=clone(DEFAULTS.docs);
+    if(!C.docs.generalSecretary)C.docs.generalSecretary='The General Secretary, NAMSA-PU';
     C.guidelines.sections=fixSecs(C.guidelines.sections);
     if(!Array.isArray(C.guidelines.docs))C.guidelines.docs=[];
     C.guidelines.docs=C.guidelines.docs.filter(function(x){return x&&typeof x==='object'}).map(function(x){return {name:String(x.name||''),url:String(x.url||'')}});
@@ -575,11 +582,22 @@ function ensureShape(){
     C.ads.items=C.ads.items.filter(function(x){return x&&typeof x==='object'});
   }catch(e){}
 }
+function upgradeStanding(){
+  try{
+    var g=C.guidelines,secs=(g&&g.sections)||[];
+    var allSample=secs.length>0&&secs.every(function(x){return /^\s*Sample/i.test(x.p||'')});
+    if(!g||(!g.v&&(!secs.length||allSample))){
+      var docs=(g&&Array.isArray(g.docs))?g.docs:[];
+      C.guidelines=clone(DEFAULTS.guidelines);C.guidelines.docs=docs;
+    }
+  }catch(e){}
+}
 function fixLetterDefaults(){
-  ensureShape();
+  ensureShape();upgradeStanding();
   if(!C.letter)C.letter={};
   if(!C.letter.sec)C.letter.sec='Victoria Efua Ainoo Morrison';
   if(!C.letter.head||C.letter.head==='Emmanuel Anim')C.letter.head='Anim Emmanuel';
+  if(!C.letter.cc||C.letter.cc==='The General Secretary, NAMSA; The President, NAMSA')C.letter.cc='The General Secretary, NAMSA-PU; The President, NAMSA-PU; The Patron, NAMSA-PU';
 }
 function migrateCommittee(){
   if(C.committeeV===2&&C.members)return;
@@ -635,7 +653,7 @@ function bumpIdle(){clearTimeout(idleT);if(SESSION){idleT=setTimeout(function(){
 document.addEventListener('click',bumpIdle);document.addEventListener('keydown',bumpIdle);
 
 /* ---------- routing ---------- */
-var NAV=[['home','Home'],['about','About'],['executives','Executives'],['committee','Committee'],['guidelines','Guidelines'],['track','Track My Report'],['contact','Contact']];
+var NAV=[['home','Home'],['about','About'],['executives','Executives'],['committee','Committee'],['standing-orders','Standing Orders'],['track','Track My Report'],['contact','Contact']];
 var state={sel:{},cat:null,sub:'',anon:false,adminTab:'reports',openReport:null,filter:{q:'',cat:'',status:''},done:null,trackRef:null,edit:{}};
 function go(r){if(location.hash==='#/'+r){render()}else{location.hash='#/'+r}}
 function route(){return (location.hash.replace('#/','')||'home').split('?')[0]}
@@ -684,7 +702,20 @@ function person(p){
   var ini=(p.name||'?').replace('Name to be added','?').trim().split(/\s+/).map(function(w){return w[0]}).slice(0,2).join('').toUpperCase()||'?';
   return '<article class="card person" tabindex="0" role="button" aria-label="View profile of '+esc(p.name)+'" onclick="openPerson(\''+p.id+'\')" onkeydown="if(event.key===\'Enter\')openPerson(\''+p.id+'\')"><div class="ph">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="Photo of '+esc(p.name)+'">':'<span aria-hidden="true">'+esc(ini)+'</span>')+'</div><div class="tx"><p class="pos">'+esc(p.position)+'</p><h3 class="nm">'+esc(p.name)+'</h3>'+(p.desc?'<p class="ds">'+esc(p.desc)+'</p>':'')+'<p class="more">View profile</p></div></article>';
 }
-function sections(list){return '<div class="prose">'+list.map(function(s){return '<div class="sec"><h3>'+esc(s.h)+'</h3><p>'+esc(s.p)+'</p></div>'}).join('')+'</div>'}
+function richText(t){
+  var out='';
+  function inl(x){return esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}
+  String(t==null?'':t).split(/\n{2,}/).forEach(function(b){
+    var lines=b.split('\n').map(function(x){return x.replace(/\s+$/,'')}).filter(function(x){return x.length});
+    if(!lines.length)return;
+    var ul=lines.every(function(l){return /^[-\u2022]\s+/.test(l)}),ol=lines.every(function(l){return /^\d+\.\s+/.test(l)});
+    if(ul)out+='<ul class="rt">'+lines.map(function(l){return '<li>'+inl(l.replace(/^[-\u2022]\s+/,''))+'</li>'}).join('')+'</ul>';
+    else if(ol)out+='<ol class="rt">'+lines.map(function(l){return '<li>'+inl(l.replace(/^\d+\.\s+/,''))+'</li>'}).join('')+'</ol>';
+    else out+='<p>'+lines.map(inl).join('<br>')+'</p>';
+  });
+  return out;
+}
+function sections(list,pre){return '<div class="prose">'+list.map(function(s,i){return '<div class="sec"'+(pre?' id="'+pre+'-'+i+'"':'')+'><h3>'+esc(s.h)+'</h3>'+richText(s.p)+'</div>'}).join('')+'</div>'}
 function statusClass(s){return {Approved:'good','Partially Approved':'good',Resolved:'good',Declined:'bad','Information Required':'warn'}[s]||''}
 function badge(s){return '<span class="badge '+statusClass(s)+'">'+esc(s)+'</span>'}
 
@@ -728,12 +759,29 @@ function committeeBlock(){
 }
 VIEWS.executives=function(){return '<section class="blk"><div class="wrap"><h1>NAMSA Executives</h1><div class="grid ppl">'+C.executives.map(person).join('')+'</div></div></section>'};
 VIEWS.committee=function(){return '<section class="blk"><div class="wrap"><h1>Welfare Committee</h1>'+committeeBlock()+'</div></section>'};
+function soAmounts(){
+  var L=[['funeral','Funeral'],['naming','Naming ceremony'],['wedding','Wedding']].map(function(x){var a=fixedAmount(x[0]);return a!=null?'<li><b>'+x[1]+':</b> '+money(a)+'</li>':''}).join('');
+  if(!L)return '';
+  return '<div class="card" style="margin:0 0 16px"><b>Current approved support amounts</b><ul class="rt" style="margin:8px 0 0">'+L+'</ul><p class="hint" style="margin:8px 0 0">For other categories the Committee decides the amount for each application.</p></div>';
+}
+function soJump(i){var e=document.getElementById('so-'+i);if(e&&e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'})}
+function printStanding(){
+  var g=C.guidelines,old=document.querySelector('.lt');if(old)old.remove();
+  var el=document.createElement('div');el.className='lt';el.setAttribute('role','dialog');el.setAttribute('aria-label','Standing Orders');
+  el.innerHTML='<div class="noprint" style="max-width:794px;margin:0 auto"><div class="flex spread"><h2 style="margin:0">Standing Orders</h2><button class="btn ghost small" onclick="closeLetter()">Close</button></div><div class="flex" style="margin:12px 0"><button class="btn primary" onclick="window.print()">Print or save as PDF</button></div><p class="hint">On a phone, choose Print, then Save as PDF or Share.</p></div>'
+    +'<div class="lsheet">'+docHead(false)+'<p style="text-align:center;margin:0 0 12px"><b><u>STANDING ORDERS, RULES AND GUIDELINES</u></b></p>'
+    +g.sections.map(function(x){return '<h3 style="margin:14px 0 4px;font-size:12.5pt">'+esc(x.h)+'</h3>'+richText(x.p)}).join('')+'</div>';
+  document.body.appendChild(el);
+}
 VIEWS.guidelines=function(){
   var g=C.guidelines;
-  return '<section class="blk"><div class="wrap"><h1>Welfare Guidelines</h1><p>'+esc(g.intro)+'</p>'+sections(g.sections)
+  var toc=g.sections.length>3?'<div class="card" style="margin:0 0 16px"><b>Jump to a section</b><div class="soToc">'+g.sections.map(function(x,i){return '<button class="soLink" onclick="soJump('+i+')">'+esc(x.h)+'</button>'}).join('')+'</div></div>':'';
+  return '<section class="blk"><div class="wrap"><div class="flex spread"><h1 style="margin:0">Standing Orders</h1><button class="btn ghost small" onclick="printStanding()">Print or save as PDF</button></div>'
+  +'<p style="margin-top:8px">'+esc(g.intro)+'</p>'+soAmounts()+toc+sections(g.sections,'so')
   +(g.docs.length?'<h2>Official documents</h2><div class="grid">'+g.docs.map(function(d){return '<a class="card" href="'+esc(safeUrl(d.url))+'" rel="noopener"><b>'+esc(d.name)+'</b><br><span class="hint">Open document</span></a>'}).join('')+'</div>':'')
-  +'</div></section>';
+  +'<div class="card" style="margin-top:18px"><b>Ready to apply?</b><p style="margin:6px 0 10px">Tap below to start your welfare request.</p><a class="btn primary" href="#/report">Request support</a></div></div></section>';
 };
+VIEWS['standing-orders']=VIEWS.guidelines;
 function galleryGrid(list,mini){return '<div class="gal'+(mini?' mini':'')+'">'+list.map(function(g){return '<button onclick="openPic(\''+g.id+'\')" aria-label="'+esc(g.caption||'Open picture')+'"><img src="'+esc(g.photo)+'" alt="'+esc(g.caption||'NAMSA picture')+'"></button>'}).join('')+'</div>'}
 VIEWS.gallery=function(){return '<section class="blk"><div class="wrap"><h1>Gallery</h1>'+(C.gallery.length?galleryGrid(C.gallery,false):'<div class="card"><p style="margin:0">No pictures yet.</p></div>')+'</div></section>'};
 function showImg(src,cap){
@@ -781,7 +829,7 @@ VIEWS.report=function(){
     if(location.hash.indexOf('?issue')>-1){var f=C.categories.filter(function(k){return /issue/i.test(k.label)})[0];if(f){state.cat=f.id;return VIEWS.report()}}
     return '<section class="blk"><div class="wrap" style="max-width:640px"><h1>Request support</h1><p>What do you need help with?</p><div class="opts">'
     +C.categories.map(function(k){return '<button class="opt" onclick="pickCat(\''+k.id+'\')"><span>'+esc(k.label)+'</span>'+(k.emergency?'<span class="tag">Emergency</span>':'<span aria-hidden="true">&rsaquo;</span>')+'</button>'}).join('')
-    +'</div><div class="note" style="margin-top:18px">Your information is seen only by authorised Welfare Committee administrators, for welfare purposes. It is never shown publicly.</div></div></section>';
+    +'</div><div class="note" style="margin-top:18px">Your information is seen only by authorised Welfare Committee administrators, for welfare purposes. It is never shown publicly. Please read the <a href="#/standing-orders">Standing Orders</a> before you apply.</div></div></section>';
   }
   var k=C.categories.filter(function(x){return x.id===state.cat})[0];
   if(!k){state.cat=null;return VIEWS.report()}
@@ -1441,7 +1489,7 @@ var TPL_DEFAULT={
   accept_subject:'ACCEPTANCE OF WELFARE SUPPORT: {{categoryUpper}}',
   accept_approval:'On behalf of the Welfare Committee of the Nurses and Midwives Students\u2019 Association (NAMSA-PU), Pentecost University, we are pleased to inform you that your application for welfare support towards {{purpose2}} (reference {{ref}}) has been approved.',
   accept_amount:'The approved amount is {{amountLine}}.',
-  accept_close:'We trust that this support will be of help to you. The Welfare Committee remains committed to standing with every member of the association in times of need. Please do not hesitate to contact the Committee should you require any further assistance.',
+  accept_close:'We trust that this support will be of help to you. When you come to receive the approved funds, please bring a friend to act as your witness, as required by the Welfare Standing Orders. Your witness will sign the Disbursement and Acknowledgement Form with you. The Welfare Committee remains committed to standing with every member of the association in times of need, and you are welcome to contact the Committee should you require any further assistance.',
   deadline:'Please note the following deadline: {{deadline}}.',
   reason:'The applicant has requested welfare support towards {{purpose3}}.',
   release_subject:'REQUEST FOR RELEASE OF WELFARE SUPPORT FUNDS: {{nameUpper}}{{idParen}}',
@@ -1450,8 +1498,9 @@ var TPL_DEFAULT={
   release_close:'The Welfare Committee sincerely appreciates the continued support of the leadership towards the welfare of members. We respectfully encourage the leadership to keep supporting members in their times of need, and we remain committed to maintaining and strengthening effective coordination and collaboration with the leadership.',
   ack_statement:'I, {{name}}, hereby acknowledge that I have received the approved welfare support of {{amountLine}} in full from the Welfare Committee of the Nurses and Midwives Students\u2019 Association (NAMSA-PU), Pentecost University.',
   ready_message:'Dear {{name}}, {{sympathy}}Good news: your {{categoryFull}} welfare request ({{ref}}) has been approved and the funds{{amountPhrase}} are now ready for release.\n\n{{instructions}}\n\nThank you.\nNAMSA-PU Welfare Committee',
-  ready_instructions:'Please contact the Welfare Committee on {{welfarePhone}} to arrange how you will receive the funds. Kindly bring your student ID card and quote your tracking code ({{ref}}). You can also reply to this message on the Track My Report page.',
-  wa_message:'Dear {{name}}, {{sympathy}}the NAMSA-PU Welfare Committee is pleased to inform you that your welfare application ({{ref}}) has been approved{{amountPhrase}}. {{letterPhrase}}To view it, open {{siteUrl}} , tap Track My Report, and enter your tracking code and the last 4 digits of this phone number.'
+  ready_instructions:'Please contact the Welfare Committee on {{welfarePhone}} to arrange how you will receive the funds. When you come, please bring your student ID card, quote your tracking code ({{ref}}), and bring a friend to serve as your witness. Your witness will sign beside you on the Disbursement and Acknowledgement Form. You can also reply to this message on the Track My Report page.',
+  wa_message:'Dear {{name}}, {{sympathy}}the NAMSA-PU Welfare Committee is pleased to inform you that your welfare application ({{ref}}) has been approved{{amountPhrase}}. {{letterPhrase}}To view it, open {{siteUrl}} , tap Track My Report, and enter your tracking code and the last 4 digits of this phone number. When you come to receive the funds, please bring a friend as your witness.',
+  ack_witness:'I, the undersigned witness, confirm that I was present and saw {{name}} receive the approved amount of {{amountLine}} in full from the Welfare Committee.'
 };
 var TPL=(function(){var o={};for(var k in TPL_DEFAULT)o[k]=TPL_DEFAULT[k];return o})();
 var TPL_META=[
@@ -1467,7 +1516,7 @@ var TPL_META=[
     ['accept_subject','Subject line'],['accept_approval','Approval paragraph'],['accept_amount','Amount sentence'],['accept_close','Closing message'],['deadline','Deadline sentence (only shown when you type a deadline)']]],
   ['Request for release of funds (to the President)',[
     ['release_subject','Subject line'],['release_intro','Opening paragraph'],['reason','Reason sentence'],['release_request','Request paragraph'],['release_close','Closing paragraph']]],
-  ['Disbursement and acknowledgement form',[['ack_statement','Acknowledgement statement']]],
+  ['Disbursement and acknowledgement form',[['ack_statement','Acknowledgement statement (member)'],['ack_witness','Witness statement']]],
   ['Money-is-ready notification (website message and WhatsApp)',[['ready_message','Message'],['ready_instructions','Instructions included in the message']]],
   ['WhatsApp message to the applicant after approval',[['wa_message','Message text']]]
 ];
@@ -1629,18 +1678,20 @@ function detailsTable(d){
   var rows=[['Name',d.applicant],['Student ID',d.sid],['Programme',d.programme],['Level',d.level],['Purpose / Category',d.category+(d.sub?' ('+d.sub+')':'')],['Approved Amount',amtText(d)]];
   return '<table style="border-collapse:collapse;width:100%;min-width:0;font-size:11pt;margin:6px 0 12px">'+rows.map(function(x){return '<tr><td style="border:1px solid #000;padding:5px 8px;width:36%;background:#f2f2f2"><b>'+esc(x[0])+'</b></td><td style="border:1px solid #000;padding:5px 8px">'+esc(x[1]||'')+'</td></tr>'}).join('')+'</table>';
 }
+function docLists(){var D=C.docs||{};return {pres:D.president||'The President, NAMSA-PU',gs:D.generalSecretary||'The General Secretary, NAMSA-PU',patron:D.patron||'The Patron, NAMSA-PU',fc:D.controller||'The Financial Controller, NAMSA-PU'}}
+function ccLine(list,label){return '<p style="margin:14px 0 0;font-size:10.5pt"><b>'+(label||'Cc')+':</b> '+list.map(esc).join('; ')+'</p>'}
 function acceptPre(d){return {subject:tpl('accept_subject',d),ps:[d.bodies.condolence,tpl('accept_approval',d),tpl('accept_amount',d),deadlineSentence(d),d.bodies.accept]}}
 function sheet1(d,w){
   var f=d.fields,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison',P=d.pre||acceptPre(d);
   return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:10px 0 0"><b>'+esc(d.applicant)+'</b></p>'
     +'<p style="margin:0">Student ID: '+esc(d.sid||'')+'</p><p style="margin:0 0 12px">'+esc(d.programme||'')+(d.level?', Level '+esc(d.level):'')+'</p>'
     +'<p style="margin:0 0 10px">Dear '+esc(d.applicant)+',</p><p style="margin:0 0 10px"><b><u>'+esc(P.subject)+'</u></b></p>'
-    +paras(P.ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary');
+    +paras(P.ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary')+(function(){var L=docLists();return ccLine([L.pres,L.gs,L.patron])})();
 }
 function sheet2(d,w){
   var f=d.fields,b=d.bodies,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison',D=C.docs||{};
   var ps=[tpl('release_intro',d),b.reason,b.statement,tpl('release_request',d),deadlineSentence(d),b.release];
-  return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:10px 0 2px"><b>To:</b> '+esc(D.president||'The President, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.patron||'The Patron, NAMSA-PU')+'</p><p style="margin:0 0 12px"><b>Cc:</b> '+esc(D.controller||'The Financial Controller, NAMSA-PU')+'</p>'
+  return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:10px 0 2px"><b>To:</b> '+esc(D.president||'The President, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.generalSecretary||'The General Secretary, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.patron||'The Patron, NAMSA-PU')+'</p><p style="margin:0 0 12px"><b>Cc:</b> '+esc(D.controller||'The Financial Controller, NAMSA-PU')+'</p>'
     +'<p style="margin:0 0 10px">Dear Sir/Madam,</p><p style="margin:0 0 10px"><b><u>'+esc(tpl('release_subject',d))+'</u></b></p>'
     +detailsTable(d)+paras(ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary');
 }
@@ -1652,8 +1703,10 @@ function sheet3(d,w){
     +'<p style="margin:0 0 4px"><b>MEMBER’S DETAILS</b></p>'+detailsTable(d)
     +paras([tpl('ack_statement',d)])
     +'<p style="margin:14px 0 12px">Member’s Signature: <span style="display:inline-block;border-bottom:1px solid #000;min-width:280px;height:30px">&nbsp;</span></p><p style="margin:0 0 16px">Date: '+ul('',220)+'</p>'
-    +'<p style="margin:0 0 4px"><b>AUTHORISATION</b></p>'+auth('Welfare Committee Secretary',S)+auth('Welfare Committee Head',H)+auth('Welfare Committee Treasurer',T)
-    +'<p style="margin:0 0 8px"><b>OFFICIAL USE</b></p>'+line('Amount Disbursed',f.disbursed?money(f.disbursed):'',260)+line('Payment Method',f.method,260)+line('Transaction/Reference No.',f.txn,260)+line('Remarks',f.remarks,380);
+    +'<p style="margin:0 0 4px"><b>WITNESS</b></p>'+paras([tpl('ack_witness',d)])
+    +'<p style="margin:10px 0 10px">Witness’s Full Name: '+ul('',300)+'</p><p style="margin:0 0 10px">Witness’s Phone Number: '+ul('',240)+'</p><p style="margin:0 0 10px">Witness’s Signature: <span style="display:inline-block;border-bottom:1px solid #000;min-width:280px;height:30px">&nbsp;</span></p><p style="margin:0 0 16px">Date: '+ul('',220)+'</p>'
+    +'<p style="margin:0 0 4px"><b>AUTHORISATION</b></p>'+auth('Welfare Committee Secretary',S)+auth('Welfare Committee Head',H)+auth('Welfare Committee Treasurer',T)+auth('Financial Controller, NAMSA-PU','')
+    +'<p style="margin:0 0 8px"><b>OFFICIAL USE</b></p>'+line('Amount Disbursed',f.disbursed?money(f.disbursed):'',260)+line('Payment Method',f.method,260)+line('Transaction/Reference No.',f.txn,260)+line('Remarks',f.remarks,380)+(function(){var L=docLists();return ccLine([L.pres,L.gs,L.patron,L.fc],'Copies to')})();
 }
 function docSheets(d,w){return '<div class="lsheet dsheet" data-n="1">'+sheet1(d,w)+'</div><div class="lsheet dsheet" data-n="2">'+sheet2(d,w)+'</div><div class="lsheet dsheet" data-n="3">'+sheet3(d,w)+'</div>'}
 /* ----- editable preview ----- */
@@ -1756,7 +1809,7 @@ function docSettings(){
   var d=C.docs;
   function fld(k,l){return '<label for="ds_'+k+'">'+l+'</label><input type="text" id="ds_'+k+'" value="'+esc(d[k])+'" onchange="C.docs.'+k+'=this.value;saveC();logit(SESSION.name,\'Updated welfare document settings.\');toast(\'Saved\')">'}
   function amt(k,l){return '<label for="da_'+k+'">'+l+'</label><input type="number" min="0" step="0.01" id="da_'+k+'" value="'+esc(d.amounts[k])+'" onchange="C.docs.amounts.'+k+'=Number(this.value)||0;saveC();toast(\'Saved\')">'}
-  return '<h2 style="margin-top:30px">Welfare documents</h2><div class="edit-item">'+fld('head','Welfare Committee Head')+fld('secretary','Welfare Committee Secretary')+fld('treasurer','Welfare Committee Treasurer (name)')+fld('president','Request letter: To')+fld('patron','Request letter: Cc (Patron)')+fld('controller','Request letter: Cc (Financial Controller)')+'<h3 style="margin-top:18px">Fixed amounts (GH₵)</h3>'+amt('funeral','Funeral')+amt('naming','Naming Ceremony')+amt('wedding','Wedding')+'</div>';
+  return '<h2 style="margin-top:30px">Welfare documents</h2><div class="edit-item">'+fld('head','Welfare Committee Head')+fld('secretary','Welfare Committee Secretary')+fld('treasurer','Welfare Committee Treasurer (name)')+fld('president','Request letter: To')+fld('generalSecretary','Letters: Cc (General Secretary)')+fld('patron','Request letter: Cc (Patron)')+fld('controller','Request letter: Cc (Financial Controller)')+'<h3 style="margin-top:18px">Fixed amounts (GH₵)</h3>'+amt('funeral','Funeral')+amt('naming','Naming Ceremony')+amt('wedding','Wedding')+'</div>';
 }
 function waSettings(){
   return '<h2 style="margin-top:30px">WhatsApp messages to members</h2><div class="edit-item"><p class="hint" style="margin-top:0">When a request is approved, the system places the acceptance letter on the member\'s tracking page and prepares a WhatsApp message to the phone number on the request. Normally you tap <b>Open WhatsApp</b>, then <b>Send</b>. If you have set up the WhatsApp Business connection (see the setup guide), tick the box so messages are sent automatically.</p><div class="check"><input type="checkbox" id="wa1" '+(C.notify&&C.notify.whatsappAuto?'checked':'')+' onchange="C.notify.whatsappAuto=this.checked;saveC();toast(\'Saved\')"><label for="wa1" style="margin:0">Automatic WhatsApp sending is set up</label></div></div>';
@@ -2095,7 +2148,8 @@ function secEditor(label){
     return '<div class="edit-item"><label style="margin-top:0">Heading</label><input type="text" value="'+esc(s.h)+'" onchange="editSec(\''+label+'\','+i+',\'h\',this.value)"><label>Text</label><textarea onchange="editSec(\''+label+'\','+i+',\'p\',this.value)">'+esc(s.p)+'</textarea><button class="btn danger small" style="margin-top:10px" onclick="delSec(\''+label+'\','+i+')">Remove section</button></div>';
   }).join('')+'<button class="btn dark small" onclick="addSec(\''+label+'\')">Add section</button>';
 }
-function secList(label){return label==='How to get support'?C.steps:label==='About Welfare'?C.aboutSections:label==='Welfare Guidelines'?C.guidelines.sections:C.privacy}
+function loadOfficialSO(){if(!confirm('Replace the Standing Orders on the website with the official text? Your current text will be overwritten.'))return;C.guidelines.intro=DEFAULTS.guidelines.intro;C.guidelines.sections=clone(DEFAULTS.guidelines.sections);saveC();toast('Standing Orders updated');render()}
+function secList(label){return label==='How to get support'?C.steps:label==='About Welfare'?C.aboutSections:label==='Standing Orders'?C.guidelines.sections:C.privacy}
 function editSec(l,i,f,v){secList(l)[i][f]=v;saveC();logit(SESSION.name,'Edited "'+l+'" page.');toast('Saved')}
 function addSec(l){secList(l).push({h:'New section',p:''});saveC();render()}
 function delSec(l,i){if(!confirm('Remove this section?'))return;secList(l).splice(i,1);saveC();logit(SESSION.name,'Removed a section from "'+l+'".');render()}
@@ -2104,7 +2158,7 @@ ADMIN.pages=function(){
   var h='<h2>Home page</h2><div class="edit-item"><label style="margin-top:0">Site name</label><input type="text" value="'+esc(C.site.name)+'" onchange="C.site.name=this.value;saveC();logit(SESSION.name,\'Changed site name.\');toast(\'Saved\')"><label>Headline</label><input type="text" value="'+esc(C.site.tagline)+'" onchange="C.site.tagline=this.value;saveC();toast(\'Saved\')"><label>Welcome message</label><textarea onchange="C.site.welcome=this.value;saveC();toast(\'Saved\')">'+esc(C.site.welcome)+'</textarea><label>About the committee (short)</label><textarea onchange="C.site.about=this.value;saveC();toast(\'Saved\')">'+esc(C.site.about)+'</textarea></div>';
   h+=secEditor('How to get support')+'<div style="height:24px"></div>';
   h+=secEditor('About Welfare')+'<div style="height:24px"></div>';
-  h+='<h3>Welfare Guidelines intro</h3><div class="edit-item"><textarea onchange="C.guidelines.intro=this.value;saveC();toast(\'Saved\')">'+esc(g.intro)+'</textarea></div>'+secEditor('Welfare Guidelines')+'<div style="height:18px"></div>';
+  h+='<h3>Standing Orders</h3><p class="hint">Write lists with lines that start with "1. " or "- ". Put **double stars** around words to make them bold. Leave an empty line between paragraphs.</p><div class="flex" style="margin:8px 0 12px"><button class="btn ghost small" onclick="loadOfficialSO()">Load the official Standing Orders text</button></div><h3>Introduction</h3><div class="edit-item"><textarea onchange="C.guidelines.intro=this.value;saveC();toast(\'Saved\')">'+esc(g.intro)+'</textarea></div>'+secEditor('Standing Orders')+'<div style="height:18px"></div>';
   h+='<h3>Official documents</h3><p class="hint">Add a link to each PDF (for example a Google Drive link set to "anyone with the link"). In the real site, PDFs are uploaded directly.</p>'
   +g.docs.map(function(d,i){return '<div class="edit-item"><label style="margin-top:0">Document name</label><input type="text" value="'+esc(d.name)+'" onchange="C.guidelines.docs['+i+'].name=this.value;saveC();toast(\'Saved\')"><label>Link</label><input type="text" value="'+esc(d.url)+'" onchange="C.guidelines.docs['+i+'].url=this.value;saveC();toast(\'Saved\')"><button class="btn danger small" style="margin-top:10px" onclick="C.guidelines.docs.splice('+i+',1);saveC();render()">Remove</button></div>'}).join('')
   +'<button class="btn dark small" onclick="C.guidelines.docs.push({name:\'Welfare Constitution\',url:\'https://\'});saveC();render()">Add a document</button><div style="height:24px"></div>';
