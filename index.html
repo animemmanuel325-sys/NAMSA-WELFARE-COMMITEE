@@ -213,18 +213,21 @@ a.act:hover{background:var(--info-bg)}
 
 .msg.ready{background:var(--ok-bg);border:2px solid var(--go)}
 .readybanner{background:var(--ok-bg);border:2px solid var(--go);border-radius:14px;padding:14px 16px;margin-top:16px;font-weight:600}
-/* advertisement banner: first thing on every page, in the normal flow (never covers content or navigation) */
+/* advertisement banner: first thing on every page, in the normal flow (never covers content or navigation).
+   Pictures are shown whole: never cropped, never covered by text. */
 .adtop{background:var(--bg);border-bottom:1px solid var(--line);padding:8px 0}
-.adtop-box{position:relative;border-radius:16px;overflow:hidden;background:var(--surface);border:1px solid var(--line);box-shadow:0 4px 14px rgba(10,74,166,.14)}
-.adtop-slide{display:none;position:relative;color:inherit;text-decoration:none}
-.adtop-slide.on{display:block;animation:cmUp .5s ease both}
-.adtop-slide img{display:block;width:100%;height:clamp(110px,28vw,240px);object-fit:cover}
-.adtop-tag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.62);color:#fff;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
-.adtop-name{position:absolute;left:0;right:0;bottom:0;padding:22px 70px 8px 12px;color:#fff;font-weight:700;font-size:.92rem;background:linear-gradient(transparent,rgba(0,0,0,.68))}
-.adtop-dots{position:absolute;right:4px;bottom:2px;display:flex}
+.adtop-box{border-radius:16px;overflow:hidden;background:var(--surface);border:1px solid var(--line);box-shadow:0 4px 14px rgba(10,74,166,.14)}
+.adtop-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 10px;min-height:28px;background:var(--info-bg);font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.adtop-dots{display:flex}
 .adtop-dot{width:26px;height:26px;border:0;background:transparent;position:relative;cursor:pointer;padding:0}
-.adtop-dot::after{content:"";position:absolute;left:8px;top:8px;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.6)}
-.adtop-dot.on::after{background:#fff}
+.adtop-dot::after{content:"";position:absolute;left:8px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--line)}
+.adtop-dot.on::after{background:var(--brand)}
+.adtop-slide{display:none;width:100%;text-align:center;color:inherit;text-decoration:none;background:var(--surface);border:0;padding:0;cursor:pointer;font:inherit}
+.adtop-slide.on{display:block;animation:cmUp .5s ease both}
+.adtop-slide img{display:block;margin:0 auto;max-width:100%;width:auto;height:auto;max-height:min(62vh,460px);object-fit:contain}
+.adtop-cap{display:block;padding:6px 12px 2px;font-size:.9rem;font-weight:700;color:var(--ink)}
+.adtop-hint{display:block;padding:0 12px 8px;font-size:.74rem;font-weight:600;color:var(--muted)}
+.adtop-slide:not(button) .adtop-cap{padding-bottom:8px}
 .adtop-empty{display:flex;align-items:center;justify-content:center;min-height:52px;padding:10px 14px;border:2px dashed var(--line);border-radius:14px;color:var(--muted);font-weight:600;text-align:center;font-size:.92rem}
 
 
@@ -489,7 +492,7 @@ var DEFAULTS={
     {id:'e6',name:'Name to be added',position:'PRO',desc:'',photo:''},
     {id:'e7',name:'Name to be added',position:'Organizer',desc:'',photo:''}
   ],
-  docs:{head:'Anim Emmanuel',secretary:'Victoria Efua Ainoo Morrison',treasurer:'',president:'The President, NAMSA-PU',generalSecretary:'The General Secretary, NAMSA-PU',patron:'The Patron, NAMSA-PU',controller:'The Financial Controller, NAMSA-PU',amounts:{funeral:500,naming:250,wedding:300}},
+  docs:{head:'Anim Emmanuel',secretary:'Victoria Efua Ainoo Morrison',treasurer:'',presidentName:'',nsecretaryName:'',president:'The President, NAMSA-PU',generalSecretary:'The General Secretary, NAMSA-PU',patron:'The Patron, NAMSA-PU',controller:'The Financial Controller, NAMSA-PU',amounts:{funeral:500,naming:250,wedding:300}},
   ads:{enabled:true,heading:'Advertisements',contact:'Want to advertise here? Please contact the NAMSA-PU Welfare Committee.',items:[]},
   letter:{to:'The Financial Controller, NAMSA',cc:'The General Secretary, NAMSA-PU; The President, NAMSA-PU; The Patron, NAMSA-PU',head:'Emmanuel Anim',sec:'Victoria Efua Ainoo Morrison'},
   committeeV:2,
@@ -1316,6 +1319,7 @@ function buildLetterBody(r){
 }
 async function openLetter(ref){
   var r=getR(ref);if(!r)return;
+  if(['Approved','Partially Approved'].indexOf(r.status)<0){toast('Approve this request first, then generate the letter.');return}
   var L=C.letter||{},ev=letterEvidenceList(r);
   if(LIVE){for(var i=0;i<ev.length;i++){if(!ev[i].isImage)continue;if(ev[i].fid){var q=await sb.from('member_files').select('mime,data_b64').eq('id',ev[i].fid).maybeSingle();if(q.data)ev[i].url='data:'+q.data.mime+';base64,'+q.data.data_b64}else if(ev[i].path){var sg=await sb.storage.from('attachments').createSignedUrl(ev[i].path,3600);if(sg.data)ev[i].url=sg.data.signedUrl}}}
   state.letter={ref:ref,to:L.to||'',cc:L.cc||'',head:L.head||'',sec:L.sec||'',date:fmtDay(Date.now()),
@@ -1339,9 +1343,7 @@ function letterSheet(forWord){
     ev='<p style="margin:0 0 6px"><b>Enclosures (evidence submitted by the member):</b></p><ol style="margin:0 0 8px 18px;padding:0">'+l.ev.map(function(e){return '<li>'+esc(e.name)+'</li>'}).join('')+'</ol>';
     if(!forWord)ev+=l.ev.filter(function(e){return e.url}).map(function(e){return '<div style="margin:8px 0;page-break-inside:avoid"><img src="'+esc(e.url)+'" alt="'+esc(e.name)+'" style="max-width:100%;max-height:9cm;border:1px solid #999"><br><small>'+esc(e.name)+'</small></div>'}).join('');
   }
-  var sign='<p style="margin:18px 0 6px">Yours faithfully,</p>'
-    +'<div style="margin-top:34px;page-break-inside:avoid"><div style="border-bottom:1px solid #000;height:88px;width:300px"></div><b>'+esc(l.head||'')+'</b><br>Welfare Committee Head</div>'
-    +'<div style="margin-top:34px;page-break-inside:avoid"><div style="border-bottom:1px solid #000;height:88px;width:300px"></div><b>'+(l.sec?esc(l.sec):'&nbsp;')+'</b><br>Welfare Secretary</div>';
+  var sign=sigGrid(l.head||'',l.sec||'');
   return head+meta+paras+tbl+ev+sign;
 }
 function drawLetter(){
@@ -1627,7 +1629,9 @@ function docsPanel(r){
   if(r.anon)return '<h3 style="margin-top:22px">Welfare documents</h3><div class="note">This request is anonymous, so welfare documents cannot be generated.</div>';
   var ex=DOCS.filter(function(d){return d.ref===r.ref})[0];
   h+='<h3 style="margin-top:22px">Welfare documents</h3><div class="card"><p style="margin:0 0 4px"><b>Category:</b> '+esc(KIND_LABEL[k])+'</p><p style="margin:0 0 4px"><b>Status:</b> '+esc(r.status)+'</p><p style="margin:0 0 12px"><b>Approved amount:</b> '+approvedLine(r)+'</p>';
-  h+='<button class="btn primary" style="width:100%;min-height:58px;font-size:1.02rem" onclick="startDocs(\''+r.ref+'\')">GENERATE WELFARE DOCUMENTS</button>';
+  var okAp=['Approved','Partially Approved'].indexOf(r.status)>-1;
+  h+='<button class="btn primary" style="width:100%;min-height:58px;font-size:1.02rem" '+(okAp?'':'disabled ')+'onclick="startDocs(\''+r.ref+'\')">GENERATE WELFARE DOCUMENTS</button>';
+  if(!okAp)h+='<p class="hint" style="margin:8px 0 0">The letters can be generated only after the request is approved. Set the status to Approved first.</p>';
   if(ex)h+='<p style="margin:12px 0 0"><span class="badge">'+esc(ex.status)+'</span> Documents already exist for this request. <button class="btn ghost small" onclick="openDocSet(\''+r.ref+'\')">Open them</button></p>';
   h+='<p class="hint" style="margin:12px 0 0">Your application data is not changed. The documents are prepared from your letter templates, and you review, edit and approve everything before it becomes final.</p>';
   if(['Approved','Partially Approved'].indexOf(r.status)>-1&&canMsgPhone(r))h+='<p style="margin:12px 0 0"><button class="btn ghost small" onclick="resendApproval(\''+r.ref+'\')">Send approval message to the member on WhatsApp</button></p>';
@@ -1650,14 +1654,13 @@ async function startDocs(ref){
   var kind=catKind(r);
   if(kind==='issue'||r.anon)return;
   if(['Approved','Partially Approved'].indexOf(r.status)<0){
-    if(!confirm('This request is not marked Approved yet (status: '+r.status+').\n\nMark it as Approved and continue?'))return;
-    if(!await setStatusDirect(r,'Approved'))return;
+    toast('Approve this request first (set the status to Approved), then generate the letters.');return
   }
   var res=makeBodies(r,kind);
   var fx=fixedAmount(kind);
   var d={dbid:null,report_id:r.id||null,ref:r.ref,kind:kind,rel:res.rel,applicant:r.name,sid:r.sid,programme:r.programme,level:r.level,category:r.category,sub:r.sub||'',
     amount:fx!=null?String(fx):((Number(r.approved_amount)||0)>0?String(r.approved_amount):''),status:'Draft',by:SESSION.name,at:Date.now(),ai:res.ai,note:res.note,
-    bodies:res.bodies,fields:{amount:fx!=null?String(fx):((Number(r.approved_amount)||0)>0?String(r.approved_amount):''),treasurer:(C.docs&&C.docs.treasurer)||'',date:fmtDay(Date.now()),deadline:'',method:'',txn:'',remarks:'',disbursed:''}};
+    bodies:res.bodies,fields:{amount:fx!=null?String(fx):((Number(r.approved_amount)||0)>0?String(r.approved_amount):''),treasurer:(C.docs&&C.docs.treasurer)||'',date:fmtDay(Date.now()),deadline:'',location:'',method:'',txn:'',remarks:'',disbursed:''}};
   await saveDoc(d);
   logit(SESSION.name,'Generated welfare documents for '+ref+'.');
   state.doc=d;drawDocs();
@@ -1670,6 +1673,23 @@ function openDocSet(refOrDoc){
 /* ----- the three documents ----- */
 function ul(v,w){return v?esc(v):'<span style="display:inline-block;border-bottom:1px solid #000;min-width:'+(w||240)+'px">&nbsp;</span>'}
 function docHead(w){return '<div style="text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:14px">'+(w?'':'<img src="'+esc(logoSrc())+'" alt="" style="width:62px;height:62px;border-radius:50%"><br>')+'<b style="font-size:13pt">'+esc(ORG.l1)+'</b><br><b>'+esc(ORG.l2)+'</b><br><b style="letter-spacing:.06em">'+esc(ORG.l3)+'</b></div>'}
+function officials(head,sec){
+  var D=C.docs||{};
+  return [{name:head!=null?head:(D.head||'Anim Emmanuel'),title:'Welfare Committee Head'},
+          {name:sec!=null?sec:(D.secretary||'Victoria Efua Ainoo Morrison'),title:'Welfare Committee Secretary'},
+          {name:D.presidentName||'',title:'NAMSA President'},
+          {name:D.nsecretaryName||'',title:'NAMSA Secretary'}];
+}
+function sigBox(o){
+  return '<div class="sigbox" style="page-break-inside:avoid;border:1px solid #000;padding:8px 10px">'
+    +'<div style="border-bottom:1px solid #000;height:64px"></div><div style="font-size:9pt;margin-bottom:4px">Signature</div>'
+    +'<p style="margin:4px 0 2px"><b>Name:</b> '+ul(o.name,170)+'</p>'
+    +'<p style="margin:0 0 2px"><b>Designation:</b> '+esc(o.title)+'</p>'
+    +'<p style="margin:0"><b>Date:</b> '+ul('',150)+'</p></div>';
+}
+function sigGrid(head,sec){
+  return '<p style="margin:16px 0 0">Yours faithfully,</p><div class="siggrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:14px">'+officials(head,sec).map(sigBox).join('')+'</div>';
+}
 function sigBlock(name,title){return '<div style="margin-top:34px;page-break-inside:avoid"><div style="border-bottom:1px solid #000;height:88px;width:300px"></div><b>'+(name?esc(name):'&nbsp;')+'</b><br>'+esc(title)+'</div>'}
 function paras(arr){return arr.filter(Boolean).map(function(x){return '<p style="margin:0 0 10px;text-align:justify">'+esc(x).replace(/\n/g,'<br>')+'</p>'}).join('')}
 function amtText(d){return Number(d.fields.amount)>0?moneyLine(d.fields.amount):'GH₵ ______________'}
@@ -1682,18 +1702,26 @@ function docLists(){var D=C.docs||{};return {pres:D.president||'The President, N
 function ccLine(list,label){return '<p style="margin:14px 0 0;font-size:10.5pt"><b>'+(label||'Cc')+':</b> '+list.map(esc).join('; ')+'</p>'}
 function acceptPre(d){return {subject:tpl('accept_subject',d),ps:[d.bodies.condolence,tpl('accept_approval',d),tpl('accept_amount',d),deadlineSentence(d),d.bodies.accept]}}
 function sheet1(d,w){
-  var f=d.fields,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison',P=d.pre||acceptPre(d);
-  return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:10px 0 0"><b>'+esc(d.applicant)+'</b></p>'
+  var f=d.fields,P=d.pre||acceptPre(d);
+  return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:0 0 2px">Our ref: '+esc(d.ref||'')+'</p><p style="margin:10px 0 0"><b>'+esc(d.applicant)+'</b></p>'
     +'<p style="margin:0">Student ID: '+esc(d.sid||'')+'</p><p style="margin:0 0 12px">'+esc(d.programme||'')+(d.level?', Level '+esc(d.level):'')+'</p>'
     +'<p style="margin:0 0 10px">Dear '+esc(d.applicant)+',</p><p style="margin:0 0 10px"><b><u>'+esc(P.subject)+'</u></b></p>'
-    +paras(P.ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary')+(function(){var L=docLists();return ccLine([L.pres,L.gs,L.patron])})();
+    +paras(P.ps)+detailsTable(d)+sigGrid()+(function(){var L=docLists();return ccLine([L.pres,L.gs,L.patron])})();
+}
+function presidentBox(f){
+  function lines(n){var o='';for(var i=0;i<n;i++)o+='<div style="border-bottom:1px solid #000;height:26px"></div>';return o}
+  return '<div class="presbox" style="border:1.5px solid #000;padding:10px 12px;margin:14px 0;page-break-inside:avoid">'
+    +'<b>FOR COMPLETION BY THE NAMSA PRESIDENT</b>'
+    +'<p style="margin:8px 0 4px">Location or office assigned for the release or collection of the funds:</p>'
+    +(f.location?'<p style="margin:0 0 8px"><b>'+esc(f.location)+'</b></p>':lines(2))
+    +'<p style="margin:8px 0 4px">Instructions or remarks (if any):</p>'+lines(3)+'</div>';
 }
 function sheet2(d,w){
-  var f=d.fields,b=d.bodies,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison',D=C.docs||{};
+  var f=d.fields,b=d.bodies,D=C.docs||{};
   var ps=[tpl('release_intro',d),b.reason,b.statement,tpl('release_request',d),deadlineSentence(d),b.release];
-  return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:10px 0 2px"><b>To:</b> '+esc(D.president||'The President, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.generalSecretary||'The General Secretary, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.patron||'The Patron, NAMSA-PU')+'</p><p style="margin:0 0 12px"><b>Cc:</b> '+esc(D.controller||'The Financial Controller, NAMSA-PU')+'</p>'
+  return docHead(w)+'<p style="margin:0 0 2px">'+esc(f.date)+'</p><p style="margin:0 0 2px">Our ref: '+esc(d.ref||'')+'</p><p style="margin:10px 0 2px"><b>To:</b> '+esc(D.president||'The President, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.generalSecretary||'The General Secretary, NAMSA-PU')+'</p><p style="margin:0 0 2px"><b>Cc:</b> '+esc(D.patron||'The Patron, NAMSA-PU')+'</p><p style="margin:0 0 12px"><b>Cc:</b> '+esc(D.controller||'The Financial Controller, NAMSA-PU')+'</p>'
     +'<p style="margin:0 0 10px">Dear Sir/Madam,</p><p style="margin:0 0 10px"><b><u>'+esc(tpl('release_subject',d))+'</u></b></p>'
-    +detailsTable(d)+paras(ps)+'<p style="margin:16px 0 0">Yours faithfully,</p>'+sigBlock(H,'Welfare Committee Head')+sigBlock(S,'Welfare Committee Secretary');
+    +detailsTable(d)+paras(ps)+presidentBox(f)+sigGrid();
 }
 function sheet3(d,w){
   var f=d.fields,H=(C.docs&&C.docs.head)||'Anim Emmanuel',S=(C.docs&&C.docs.secretary)||'Victoria Efua Ainoo Morrison',T=f.treasurer||'';
@@ -1729,7 +1757,7 @@ function drawDocs(){
   if(fixed!=null){h+='<label for="df_amount">Approved amount (GH₵) <span class="hint">fixed for '+esc(KIND_LABEL[d.kind])+'. Change it under Settings if needed.</span></label><input type="text" id="df_amount" value="'+esc(f.amount)+'" disabled>'}
   else{h+=inp('df_amount','Approved amount (GH₵)','amount',lock,'number',(r&&r.amount?'Member requested: GHS '+esc(r.amount):''));}
   h+='<p class="hint" id="df_words" style="margin:6px 0 0">'+(Number(f.amount)>0?esc(moneyLine(f.amount)):'Enter the amount. It will be written in words automatically.')+'</p>';
-  h+=inp('df_treasurer','Welfare Committee Treasurer (name)','treasurer',lock)+inp('df_date','Date','date',lock)+inp('df_deadline','Deadline','deadline',lock,'text','only if the application has one. Leave empty otherwise.');
+  h+=inp('df_treasurer','Welfare Committee Treasurer (name)','treasurer',lock)+inp('df_date','Date','date',lock)+inp('df_location','Fund release: location or office assigned by the NAMSA President','location',lock,'text','optional. Leave empty and the President writes it by hand on the letter.')+inp('df_deadline','Deadline','deadline',lock,'text','only if the application has one. Leave empty otherwise.');
   h+=ta('db_reason','Request letter: reason (third person)','reason')+ta('db_statement','Request letter: applicant’s statement, corrected English','statement')+ta('db_condolence','Acceptance letter: opening message (condolence or congratulations)','condolence',true)+ta('db_accept','Acceptance letter: closing message','accept')+ta('db_release','Request letter: closing paragraph','release');
   h+='<h3 style="margin-top:20px">Official use (disbursement)</h3>'+inp('df_disbursed','Amount disbursed (GH₵)','disbursed',lockAll,'number')+inp('df_method','Payment method','method',lockAll)+inp('df_txn','Transaction / reference no.','txn',lockAll)+inp('df_remarks','Remarks','remarks',lockAll);
   h+='<div class="flex" style="margin:18px 0 6px">';
@@ -1746,10 +1774,12 @@ async function docMarkReviewed(){var d=state.doc;d.status='Reviewed';if(await sa
 async function docFinalize(){
   var d=state.doc;
   if(!(Number(d.fields.amount)>0)){toast('Enter the approved amount first');return}
+  var rr=getR(d.ref);
+  if(!rr||['Approved','Partially Approved'].indexOf(rr.status)<0){toast('This request is not approved, so the documents cannot be finalized.');return}
   if(!confirm('Approve and finalize these documents?\n\nAmount: '+moneyLine(d.fields.amount)+'\n\nAfter this, the amount, wording and dates are locked.'))return;
   d.status='Finalized';d.amount=d.fields.amount;
   var r=getR(d.ref);
-  if(r){await opAmounts(r,Number(d.fields.amount),null);if(['Approved','Partially Approved'].indexOf(r.status)<0)await opStatus(r,'Approved')}
+  if(r){await opAmounts(r,Number(d.fields.amount),null)}
   if(await saveDoc(d)){logit(SESSION.name,'Finalized welfare documents for '+d.ref+' ('+money(d.fields.amount)+').');toast('Documents finalized');drawDocs();await sendAcceptanceToMember(true)}
 }
 async function docReopen(){
@@ -1809,7 +1839,7 @@ function docSettings(){
   var d=C.docs;
   function fld(k,l){return '<label for="ds_'+k+'">'+l+'</label><input type="text" id="ds_'+k+'" value="'+esc(d[k])+'" onchange="C.docs.'+k+'=this.value;saveC();logit(SESSION.name,\'Updated welfare document settings.\');toast(\'Saved\')">'}
   function amt(k,l){return '<label for="da_'+k+'">'+l+'</label><input type="number" min="0" step="0.01" id="da_'+k+'" value="'+esc(d.amounts[k])+'" onchange="C.docs.amounts.'+k+'=Number(this.value)||0;saveC();toast(\'Saved\')">'}
-  return '<h2 style="margin-top:30px">Welfare documents</h2><div class="edit-item">'+fld('head','Welfare Committee Head')+fld('secretary','Welfare Committee Secretary')+fld('treasurer','Welfare Committee Treasurer (name)')+fld('president','Request letter: To')+fld('generalSecretary','Letters: Cc (General Secretary)')+fld('patron','Request letter: Cc (Patron)')+fld('controller','Request letter: Cc (Financial Controller)')+'<h3 style="margin-top:18px">Fixed amounts (GH₵)</h3>'+amt('funeral','Funeral')+amt('naming','Naming Ceremony')+amt('wedding','Wedding')+'</div>';
+  return '<h2 style="margin-top:30px">Welfare documents</h2><div class="edit-item">'+fld('head','Welfare Committee Head')+fld('secretary','Welfare Committee Secretary')+fld('treasurer','Welfare Committee Treasurer (name)')+fld('presidentName','NAMSA President (name on the signature boxes)')+fld('nsecretaryName','NAMSA Secretary (name on the signature boxes)')+fld('president','Request letter: To')+fld('generalSecretary','Letters: Cc (General Secretary)')+fld('patron','Request letter: Cc (Patron)')+fld('controller','Request letter: Cc (Financial Controller)')+'<h3 style="margin-top:18px">Fixed amounts (GH₵)</h3>'+amt('funeral','Funeral')+amt('naming','Naming Ceremony')+amt('wedding','Wedding')+'</div>';
 }
 function waSettings(){
   return '<h2 style="margin-top:30px">WhatsApp messages to members</h2><div class="edit-item"><p class="hint" style="margin-top:0">When a request is approved, the system places the acceptance letter on the member\'s tracking page and prepares a WhatsApp message to the phone number on the request. Normally you tap <b>Open WhatsApp</b>, then <b>Send</b>. If you have set up the WhatsApp Business connection (see the setup guide), tick the box so messages are sent automatically.</p><div class="check"><input type="checkbox" id="wa1" '+(C.notify&&C.notify.whatsappAuto?'checked':'')+' onchange="C.notify.whatsappAuto=this.checked;saveC();toast(\'Saved\')"><label for="wa1" style="margin:0">Automatic WhatsApp sending is set up</label></div></div>';
@@ -1914,16 +1944,20 @@ function adsTop(){
     var A=C.ads;if(!A||A.enabled===false)return '';
     var today=new Date().toISOString().slice(0,10);
     var list=(A.items||[]).filter(function(x){return x&&x.active!==false&&x.image&&(!x.from||x.from<=today)&&(!x.to||x.to>=today)});
+    window._adList=list;
     if(!list.length)return '<div class="wrap"><div class="adtop-empty">Advertising space available. '+esc(A.contact||'')+'</div></div>';
     var slides=list.map(function(x,i){
-      var inner='<img src="'+esc(x.image)+'" alt="'+esc(x.name||'Advertisement')+'"><span class="adtop-tag">Ad</span>'+(x.name?'<span class="adtop-name">'+esc(x.name)+'</span>':'');
       var cls='adtop-slide'+(i===0?' on':'');
-      return (x.url&&safeUrl(x.url)!=='#')?'<a class="'+cls+'" href="'+esc(safeUrl(x.url))+'" target="_blank" rel="sponsored noopener noreferrer">'+inner+'</a>':'<div class="'+cls+'">'+inner+'</div>';
+      var img='<img src="'+esc(x.image)+'" alt="'+esc(x.name||'Advertisement')+'">';
+      var cap=x.name?'<span class="adtop-cap">'+esc(x.name)+'</span>':'';
+      if(x.url&&safeUrl(x.url)!=='#')return '<a class="'+cls+'" href="'+esc(safeUrl(x.url))+'" target="_blank" rel="sponsored noopener noreferrer" aria-label="Open advertisement: '+esc(x.name||'link')+'">'+img+cap+'</a>';
+      return '<button type="button" class="'+cls+'" onclick="adView('+i+')" aria-label="View advertisement larger: '+esc(x.name||'')+'">'+img+cap+'<span class="adtop-hint">Tap to view larger</span></button>';
     }).join('');
     var dots=list.length>1?'<div class="adtop-dots">'+list.map(function(x,i){return '<button class="adtop-dot'+(i===0?' on':'')+'" aria-label="Show advertisement '+(i+1)+'" onclick="adGo('+i+')"></button>'}).join('')+'</div>':'';
-    return '<div class="wrap"><aside class="adtop-box" aria-label="Advertisement">'+slides+dots+'</aside></div>';
+    return '<div class="wrap"><aside class="adtop-box" aria-label="Advertisement"><div class="adtop-bar"><span>Advertisement</span>'+dots+'</div>'+slides+'</aside></div>';
   }catch(e){return ''}
 }
+function adView(i){var x=(window._adList||[])[i];if(x&&x.image)showImg(x.image,x.name||'Advertisement')}
 function adGo(i){
   var host=document.getElementById('adtop');if(!host||!host.querySelectorAll)return;
   var sl=host.querySelectorAll('.adtop-slide'),dt=host.querySelectorAll('.adtop-dot');
@@ -1950,20 +1984,20 @@ function adImg(i,input){
   var f=input.files&&input.files[0];if(!f||!C.ads.items[i])return;
   var rd=new FileReader();
   rd.onload=function(){var img=new Image();img.onload=function(){
-    var k=Math.min(1,960/img.width),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+    var k=Math.min(1,1200/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
     cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);toast('Uploading...');
-    storeImg(jpegUnder(cv,.82)).then(function(u){if(!u)return;C.ads.items[i].image=u;saveC();render()});
+    storeImg(jpegUnder(cv,.86)).then(function(u){if(!u)return;C.ads.items[i].image=u;saveC();render()});
   };img.onerror=function(){toast('That image could not be read')};img.src=rd.result};
   rd.readAsDataURL(f);
 }
 ADMIN.ads=function(){
   var A=C.ads;
-  var h='<h2>Advertisements</h2><p class="hint">Active advertisements appear in a banner at the very top of every page, in a clearly labelled box that never covers the menu or content. Best picture size: 1200 by 400 pixels (3 to 1), 200 KB or smaller. Several active advertisements rotate every 6 seconds. Links must start with https://.</p>';
+  var h='<h2>Advertisements</h2><p class="hint">Active advertisements appear in a banner at the very top of every page, in a clearly labelled box that never covers the menu or content. Pictures are always shown whole, never cropped, so any shape works. Use a clear picture of 200 KB or smaller. With a link, the picture opens the link. Without a link, it opens larger. Several active advertisements rotate every 6 seconds. Links must start with https://.</p>';
   h+='<div class="edit-item"><div class="check"><input type="checkbox" id="ad_on" '+(A.enabled!==false?'checked':'')+' onchange="C.ads.enabled=this.checked;saveC();toast(\'Saved\')"><label for="ad_on" style="margin:0">Show the advertisement banner at the top of the website</label></div>'
     +'<label for="ad_h">Heading</label><input type="text" id="ad_h" value="'+esc(A.heading)+'" onchange="C.ads.heading=this.value;saveC();toast(\'Saved\')">'
     +'<label for="ad_c">Message shown when there are no active advertisements</label><input type="text" id="ad_c" value="'+esc(A.contact)+'" onchange="C.ads.contact=this.value;saveC();toast(\'Saved\')"></div>';
   h+=A.items.map(function(x,i){
-    return '<div class="edit-item"><div class="flex"><div class="thumb" style="width:96px;height:54px">'+(x.image?'<img src="'+esc(x.image)+'" alt="">':'<span>Ad</span>')+'</div>'
+    return '<div class="edit-item"><div class="flex"><div class="thumb" style="width:96px;height:54px">'+(x.image?'<img src="'+esc(x.image)+'" alt="" style="object-fit:contain">':'<span>Ad</span>')+'</div>'
       +'<div class="flex"><label class="btn dark small" for="adi'+i+'" style="margin:0">Choose picture (max 200 KB)</label><input type="file" id="adi'+i+'" class="sr" accept="image/*" onchange="adImg('+i+',this)"></div></div>'
       +'<label for="adn'+i+'">Advertiser name</label><input type="text" id="adn'+i+'" value="'+esc(x.name)+'" onchange="adSet('+i+',\'name\',this.value)">'
       +'<label for="adu'+i+'">Link (https://...)</label><input type="text" id="adu'+i+'" value="'+esc(x.url)+'" onchange="adUrl('+i+',this.value)">'
