@@ -836,7 +836,7 @@ VIEWS.contact=function(){return '<section class="blk"><div class="wrap"><h1>Cont
 /* ---------- report form ---------- */
 VIEWS.report=function(){
   if(state.done)return confirmView();
-  if(LIVE&&C.accounts&&C.accounts.requireLogin&&!ME)return loginPrompt('Please sign in with your student account to send a request.');
+  if(LIVE&&!ME){state.afterLogin=(location.hash||'#/report').replace('#/','');return state.hasSession?completeProfileView():loginPrompt('To send a request or report an issue you need a student account. Create one once, then you can report any time.')}
   if(!state.cat){
     if(location.hash.indexOf('?issue')>-1){var f=C.categories.filter(function(k){return /issue/i.test(k.label)})[0];if(f){state.cat=f.id;return VIEWS.report()}}
     return '<section class="blk"><div class="wrap" style="max-width:640px"><h1>Request support</h1><p>What do you need help with?</p><div class="opts">'
@@ -853,6 +853,10 @@ VIEWS.report=function(){
   if(k.subs.length){h+='<label for="sub">Which applies?</label><select id="sub" required><option value="">Choose one</option>'+k.subs.map(function(s){return '<option'+(state.sub===s?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select>'}
   if(k.anon){h+='<div class="check"><input type="checkbox" id="anon" '+(state.anon?'checked':'')+' onchange="toggleAnon(this.checked)"><label for="anon" style="margin:0">Report anonymously</label></div>'}
   if(anon){h+='<div class="note">Anonymous reports limit our ability to contact you or give direct help. Save your reference number to see any update.</div>'}
+  else if(ME){
+    h+='<div class="note ok">Reporting as <b>'+esc(ME.full_name)+'</b> (Student ID '+esc(ME.student_id)+'). Your details come from your account, so you do not need to type them again.</div>'
+    +'<label for="lv">Your level</label><select id="lv" required><option value="">Choose your level</option><option>100</option><option>200</option><option>300</option><option>400</option><option>Other</option></select>';
+  }
   else{
     h+='<div class="row two"><div><label for="fn">Full name</label><input type="text" id="fn" autocomplete="name" required></div><div><label for="sid">Student / member ID</label><input type="text" id="sid" required></div></div>'
     +'<div class="row two"><div><label for="ph">Phone number</label><input type="tel" id="ph" autocomplete="tel" inputmode="tel" required></div><div><label for="em">Email <span class="hint">(to receive your tracking code)</span></label><input type="email" id="em" autocomplete="email"></div></div>'
@@ -880,7 +884,10 @@ function submitReport(e){
   if(Date.now()-(state.formT||0)<3000){$('ferr').textContent='Please wait a moment, then tap Submit again.';return false}
   var err=[];
   if(k.subs.length&&!v('sub'))err.push('Choose which option applies.');
-  if(!anon){
+  if(!anon&&ME){
+    if(!v('lv'))err.push('Choose your level.');
+  }
+  else if(!anon){
     if(!v('fn'))err.push('Enter your full name.');
     if(!v('sid'))err.push('Enter your student or member ID.');
     if(!/^[0-9+\s()-]{7,}$/.test(v('ph')))err.push('Enter a valid phone number.');
@@ -1232,7 +1239,7 @@ async function liveTrack(ref,p4){
 async function submitLive(k,anon,v,files,raw,btn){
   try{
     var packed=await packFiles(raw);
-    var payload={category:k.label,sub:v('sub'),emergency:!!k.emergency,anon:!!anon,name:anon?'Anonymous':v('fn'),sid:v('sid'),phone:v('ph'),email:v('em'),programme:v('pg'),level:v('lv'),contact:v('cm'),descr:v('ds'),amount:v('am'),files:packed};
+    var payload={category:k.label,sub:v('sub'),emergency:!!k.emergency,anon:!!anon,name:anon?'Anonymous':(ME?ME.full_name:v('fn')),sid:ME?ME.student_id:v('sid'),phone:ME?(ME.phone||''):v('ph'),email:ME?'':v('em'),programme:ME?(ME.programme||''):v('pg'),level:v('lv')||(ME?(ME.level||''):''),contact:ME?'':v('cm'),descr:v('ds'),amount:v('am'),files:packed};
     var r=await sb.rpc('submit_report',{payload:payload});
     if(r.error)throw r.error;
     var d=r.data;
@@ -1867,7 +1874,7 @@ function docSettings(){
 function waSettings(){
   return '<h2 style="margin-top:30px">WhatsApp messages to members</h2><div class="edit-item"><p class="hint" style="margin-top:0">When a request is approved, the system places the acceptance letter on the member\'s tracking page and prepares a WhatsApp message to the phone number on the request. Normally you tap <b>Open WhatsApp</b>, then <b>Send</b>. If you have set up the WhatsApp Business connection (see the setup guide), tick the box so messages are sent automatically.</p><div class="check"><input type="checkbox" id="wa1" '+(C.notify&&C.notify.whatsappAuto?'checked':'')+' onchange="C.notify.whatsappAuto=this.checked;saveC();toast(\'Saved\')"><label for="wa1" style="margin:0">Automatic WhatsApp sending is set up</label></div></div>';
 }
-ADMIN.settings=function(){return ADMIN.settings0()+docSettings()+waSettings()+acctSettings()};
+ADMIN.settings=function(){return ADMIN.settings0()+docSettings()+waSettings()};
 
 
 /* ---------- approval: acceptance letter + WhatsApp ---------- */
@@ -2111,6 +2118,7 @@ function studentKey(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'
 function studentEmail(v){return studentKey(v)+'@'+STUDENT_DOMAIN}
 function validStudentId(v){var x=normStudentId(v);return /^[A-Z0-9\/_-]{4,30}$/.test(x)&&studentKey(x).length>=4}
 function validPassword(p){return typeof p==='string'&&p.length>=8&&p.length<=72&&/[A-Za-z]/.test(p)&&/[0-9]/.test(p)}
+function afterLoginGo(){var to=state.afterLogin;state.afterLogin=null;go(to&&to.indexOf('report')===0?to:'account')}
 function noAcct(){return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Student accounts</h1><p>Student accounts are only available on the connected website.</p></div></section>'}
 function loginPrompt(msg){
   return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Please sign in</h1><p>'+esc(msg)+'</p><div class="flex"><a class="btn primary" href="#/login">Student sign in</a><a class="btn dark" href="#/register">Create an account</a></div></div></section>';
@@ -2151,7 +2159,7 @@ async function doStudentLogin(e){
   LS.set('nw_slock',{n:0,until:0});
   state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
   await loadMe();
-  toast('Welcome back');go('account');return false;
+  toast('Welcome back');afterLoginGo();return false;
 }
 VIEWS.register=function(){
   if(!LIVE)return noAcct();
@@ -2189,7 +2197,7 @@ async function doRegister(e){
   var rg=await sb.rpc('register_student',{p_student_id:id,p_full_name:nm,p_phone:ph,p_programme:pg,p_level:lv});
   if(rg.error){await sb.auth.signOut();err.textContent=errMsg(rg.error);b.disabled=false;return false}
   state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
-  await loadMe();toast('Your account is ready');go('account');return false;
+  await loadMe();toast('Your account is ready');afterLoginGo();return false;
 }
 function completeProfileView(){
   return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Finish your profile</h1><p>Your account is signed in, but the student profile is missing. Fill it in once.</p><form onsubmit="return doCompleteProfile(event)">'
@@ -2205,7 +2213,7 @@ async function doCompleteProfile(e){
   if(!validStudentId(id)){$('cperr').textContent='Enter a valid student ID.';return false}
   var rg=await sb.rpc('register_student',{p_student_id:id,p_full_name:$('cp_nm').value.trim(),p_phone:$('cp_ph').value.trim(),p_programme:$('cp_pg').value.trim(),p_level:$('cp_lv').value});
   if(rg.error){$('cperr').textContent=errMsg(rg.error);return false}
-  await loadMe();render();return false;
+  await loadMe();afterLoginGo();return false;
 }
 VIEWS.account=function(){
   if(!LIVE)return noAcct();
@@ -2253,8 +2261,8 @@ async function changeMyPassword(){
 }
 AFTER.report=function(){
   if(!ME)return;
-  var f={fn:ME.full_name,sid:ME.student_id,ph:ME.phone||'',pg:ME.programme||'',lv:ME.level||''};
-  Object.keys(f).forEach(function(k){var el=document.getElementById(k);if(el){if(!el.value)el.value=f[k];if(k==='fn'||k==='sid')el.readOnly=true}});
+  var lv=document.getElementById('lv');
+  if(lv&&!lv.value&&ME.level)lv.value=ME.level;
 };
 
 /* ---------- admin: student accounts ---------- */
@@ -2286,9 +2294,6 @@ async function doResetPw(sid){
   var r=await sb.functions.invoke('reset-student-password',{body:{student_id:sid,password:pw}});
   if(r.error||!r.data||!r.data.ok){toast('The password could not be reset. The reset function may not be set up yet (see the guide).');return}
   var o=document.getElementById('pwdlg');if(o)o.remove();toast('Password reset. Give the student the new password.');
-}
-function acctSettings(){
-  return '<h2 style="margin-top:30px">Student accounts</h2><div class="edit-item"><div class="check"><input type="checkbox" id="rl1" '+(C.accounts&&C.accounts.requireLogin?'checked':'')+' onchange="C.accounts.requireLogin=this.checked;saveC();toast(\'Saved\')"><label for="rl1" style="margin:0">Students must sign in before they can submit a request</label></div><p class="hint" style="margin:8px 0 0">Off: anyone can still submit and track with a code, and signed-in students get their requests saved in My account. On: only signed-in students can submit. The database enforces this.</p></div>';
 }
 function getR(ref){return REPORTS.filter(function(x){return x.ref===ref})[0]}
 async function setStatus(ref){
