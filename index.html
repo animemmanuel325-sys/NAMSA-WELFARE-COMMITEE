@@ -836,6 +836,7 @@ VIEWS.contact=function(){return '<section class="blk"><div class="wrap"><h1>Cont
 /* ---------- report form ---------- */
 VIEWS.report=function(){
   if(state.done)return confirmView();
+  if(LIVE&&ME&&ME.must_change)return mustChangeView();
   if(LIVE&&!ME){state.afterLogin=(location.hash||'#/report').replace('#/','');return state.hasSession?completeProfileView():loginPrompt('To send a request or report an issue you need a student account. Create one once, then you can report any time.')}
   if(!state.cat){
     if(location.hash.indexOf('?issue')>-1){var f=C.categories.filter(function(k){return /issue/i.test(k.label)})[0];if(f){state.cat=f.id;return VIEWS.report()}}
@@ -2119,6 +2120,12 @@ function studentEmail(v){return studentKey(v)+'@'+STUDENT_DOMAIN}
 function validStudentId(v){var x=normStudentId(v);return /^[A-Z0-9\/_-]{4,30}$/.test(x)&&studentKey(x).length>=4}
 function validPassword(p){return typeof p==='string'&&p.length>=8&&p.length<=72&&/[A-Za-z]/.test(p)&&/[0-9]/.test(p)}
 function afterLoginGo(){var to=state.afterLogin;state.afterLogin=null;go(to&&to.indexOf('report')===0?to:'account')}
+function mustChangeView(){
+  return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Choose a new password</h1><div class="note">The Welfare Committee reset your password. For your safety, choose a new one now. You can then continue.</div>'
+    +'<label for="pw1">New password <span class="hint">(at least 8 characters, with letters and numbers)</span></label><input type="password" id="pw1" autocomplete="new-password">'
+    +'<label for="pw2">Confirm new password</label><input type="password" id="pw2" autocomplete="new-password">'
+    +'<div style="margin-top:14px"><button class="btn primary" style="width:100%" onclick="changeMyPassword()">Save new password</button></div></div></section>';
+}
 function noAcct(){return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Student accounts</h1><p>Student accounts are only available on the connected website.</p></div></section>'}
 function loginPrompt(msg){
   return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Please sign in</h1><p>'+esc(msg)+'</p><div class="flex"><a class="btn primary" href="#/login">Student sign in</a><a class="btn dark" href="#/register">Create an account</a></div></div></section>';
@@ -2128,7 +2135,7 @@ async function loadMe(){
   try{
     var s0=await sb.auth.getSession();if(!s0.data||!s0.data.session)return;
     state.hasSession=true;
-    var q=await sb.from('students').select('student_id,full_name,phone,programme,level').eq('user_id',s0.data.session.user.id).maybeSingle();
+    var q=await sb.from('students').select('student_id,full_name,phone,programme,level,must_change').eq('user_id',s0.data.session.user.id).maybeSingle();
     if(q.data)ME=q.data;
   }catch(e){}
 }
@@ -2159,6 +2166,7 @@ async function doStudentLogin(e){
   LS.set('nw_slock',{n:0,until:0});
   state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
   await loadMe();
+  sb.rpc('note_signin').then(function(){},function(){});
   toast('Welcome back');afterLoginGo();return false;
 }
 VIEWS.register=function(){
@@ -2219,6 +2227,7 @@ VIEWS.account=function(){
   if(!LIVE)return noAcct();
   if(!state.hasSession)return loginPrompt('Sign in to see your requests and send new ones.');
   if(!ME)return completeProfileView();
+  if(ME.must_change)return mustChangeView();
   var h='<section class="blk"><div class="wrap" style="max-width:760px"><div class="flex spread"><h1 style="margin:0">My account</h1><button class="btn ghost small" onclick="studentSignOut()">Sign out</button></div>'
     +'<div class="card" style="margin-top:14px"><p style="margin:0"><b>'+esc(ME.full_name)+'</b></p><p style="margin:0">Student ID: '+esc(ME.student_id)+'</p><p class="hint" style="margin:6px 0 0">Your Student ID cannot be changed. Contact the Welfare Committee if it is wrong.</p></div>'
     +'<div class="flex" style="margin:14px 0"><a class="btn primary" href="#/report">Request support</a><a class="btn ghost" href="#/report?issue">Report an issue</a></div>'
@@ -2257,7 +2266,10 @@ async function changeMyPassword(){
   if(a!==b){toast('The two passwords do not match.');return}
   var r=await sb.auth.updateUser({password:a});
   if(r.error){toast('The password could not be changed. Sign in again and try once more.');return}
-  $('pw1').value='';$('pw2').value='';toast('Password changed');
+  $('pw1').value='';$('pw2').value='';
+  try{await sb.rpc('note_password_changed')}catch(e){}
+  if(ME)ME.must_change=false;
+  toast('Password changed');render();
 }
 AFTER.report=function(){
   if(!ME)return;
@@ -2267,33 +2279,65 @@ AFTER.report=function(){
 
 /* ---------- admin: student accounts ---------- */
 async function loadStudents(){
-  var r=await sb.from('students').select('student_id,full_name,phone,programme,level,created_at').order('created_at',{ascending:false}).limit(2000);
-  state.students=(r.data||[]);state.studentsLoaded=true;
+  var a=await sb.rpc('staff_student_list'),b=await sb.rpc('staff_student_events');
+  state.students=(a&&a.data)||[];state.studentEvents=(b&&b.data)||[];state.studentsLoaded=true;
 }
+var EV_LABEL={created:'Created an account',signin:'Signed in',password_changed:'Chose a new password',password_reset:'Password reset by the committee'};
+function agoDays(ts){return ts?(Date.now()-new Date(ts).getTime())/86400000:Infinity}
 ADMIN.students=function(){
   var q=(state.sq||'').toLowerCase(),isSuper=SESSION&&SESSION.role==='super';
-  var list=(state.students||[]).filter(function(x){return !q||[x.student_id,x.full_name,x.programme,x.level,x.phone].join(' ').toLowerCase().indexOf(q)>-1});
-  var h='<h2>Student accounts</h2><p class="hint">Students create their own account with their Student ID. Each Student ID can have only one account.</p>'
-    +'<label for="sq" style="margin-top:0">Search</label><input type="text" id="sq" value="'+esc(state.sq||'')+'" placeholder="Student ID, name, programme" oninput="state.sq=this.value;keepFocus(\'sq\')">';
+  var all=state.students||[];
+  var list=all.filter(function(x){return !q||[x.student_id,x.full_name,x.programme,x.level,x.phone].join(' ').toLowerCase().indexOf(q)>-1});
+  var h='<h2>Student accounts</h2>'
+    +'<div class="note"><b>About passwords:</b> passwords are never shown, to anyone. Supabase keeps only a scrambled version that nobody can read back, not even administrators. This keeps every student safe if records are ever copied. '+(isSuper?'If a student forgets their password, use <b>Reset password</b>. You get a temporary password to give them, and they must choose a new one at their next sign-in.':'If a student forgets their password, ask the Super Administrator to reset it.')+'</div>';
   if(!state.studentsLoaded)return h+'<p class="hint" style="margin-top:14px">Loading...</p>';
+  h+='<div class="stats" style="margin:14px 0"><div class="stat"><b>'+all.length+'</b>Accounts</div>'
+    +'<div class="stat"><b>'+all.filter(function(x){return agoDays(x.last_sign_in_at)<=7}).length+'</b>Signed in (last 7 days)</div>'
+    +'<div class="stat"><b>'+all.filter(function(x){return agoDays(x.created_at)<=7}).length+'</b>Created (last 7 days)</div></div>';
+  h+='<label for="sq" style="margin-top:0">Search</label><input type="text" id="sq" value="'+esc(state.sq||'')+'" placeholder="Student ID, name, programme" oninput="state.sq=this.value;keepFocus(\'sq\')">';
   if(!list.length)return h+'<div class="card" style="margin-top:14px"><p style="margin:0">No student accounts found.</p></div>';
-  h+='<p class="hint" style="margin:12px 0 6px">'+list.length+' account(s)</p><div class="scroll-x"><table><thead><tr><th>Student ID</th><th>Name</th><th>Programme</th><th>Level</th><th>Phone</th><th>Registered</th>'+(isSuper?'<th></th>':'')+'</tr></thead><tbody>'
-    +list.map(function(x){return '<tr><td><b>'+esc(x.student_id)+'</b></td><td>'+esc(x.full_name)+'</td><td>'+esc(x.programme||'')+'</td><td>'+esc(x.level||'')+'</td><td>'+(x.phone?phoneLink(x.phone):'')+'</td><td>'+esc(fmtDay(new Date(x.created_at).getTime()))+'</td>'+(isSuper?'<td><button class="btn ghost small" onclick="resetStudentPw(\''+esc(x.student_id)+'\')">Reset password</button></td>':'')+'</tr>'}).join('')+'</tbody></table></div>';
+  h+='<p class="hint" style="margin:12px 0 6px">'+list.length+' account(s)</p><div class="scroll-x"><table><thead><tr><th>Student ID</th><th>Name</th><th>Programme / level</th><th>Phone</th><th>Created</th><th>Last signed in</th><th>Requests</th><th>Status</th>'+(isSuper?'<th></th>':'')+'</tr></thead><tbody>'
+    +list.map(function(x,i){return '<tr><td><b>'+esc(x.student_id)+'</b></td><td>'+esc(x.full_name)+'</td><td>'+esc(x.programme||'')+(x.level?' / '+esc(x.level):'')+'</td><td>'+(x.phone?phoneLink(x.phone):'')+'</td><td>'+esc(fmtDay(new Date(x.created_at).getTime()))+'</td><td>'+(x.last_sign_in_at?esc(fmt(new Date(x.last_sign_in_at).getTime())):'<span class="hint">Never</span>')+'</td><td>'+esc(x.requests||0)+'</td><td>'+(x.must_change?'<span class="badge warn">Must change password</span>':'<span class="badge good">Active</span>')+'</td>'+(isSuper?'<td><button class="btn ghost small" onclick="resetStudentPw(\''+esc(x.student_id)+'\')">Reset password</button></td>':'')+'</tr>'}).join('')+'</tbody></table></div>';
+  var ev=state.studentEvents||[];
+  h+='<h2 style="margin-top:28px">Recent account activity</h2>';
+  h+=ev.length?'<div class="scroll-x"><table><thead><tr><th>When</th><th>Student</th><th>What happened</th></tr></thead><tbody>'+ev.slice(0,100).map(function(e){return '<tr><td>'+esc(fmt(new Date(e.at).getTime()))+'</td><td><b>'+esc(e.student_id)+'</b>'+(e.name?'<br><span class="hint">'+esc(e.name)+'</span>':'')+'</td><td>'+esc(EV_LABEL[e.event]||e.event)+'</td></tr>'}).join('')+'</tbody></table></div>':'<div class="card"><p style="margin:0">No activity yet.</p></div>';
   return h;
 };
 function resetStudentPw(sid){
   if(!SESSION||SESSION.role!=='super'){toast('Only the Super Administrator can do this.');return}
+  var st=(state.students||[]).filter(function(x){return x.student_id===sid})[0]||{student_id:sid,full_name:''};
   var old=document.getElementById('pwdlg');if(old)old.remove();
-  var d=document.createElement('div');d.className='lb pd';d.id='pwdlg';d.setAttribute('role','dialog');
-  d.innerHTML='<div class="pcard" style="max-width:420px"><h2 style="margin:0 0 6px">Reset password</h2><p class="hint" style="margin:0 0 8px">Student ID: <b>'+esc(sid)+'</b>. Give the student this temporary password, and ask them to change it after signing in.</p><label for="np1" style="margin-top:0">New temporary password</label><input type="text" id="np1" autocomplete="off"><p class="hint">At least 8 characters, with letters and numbers.</p><div class="flex" style="margin-top:10px"><button class="btn primary" onclick="doResetPw(\''+esc(sid)+'\')">Set password</button><button class="btn ghost" onclick="document.getElementById(\'pwdlg\').remove()">Cancel</button></div></div>';
+  var d=document.createElement('div');d.className='lb pd';d.id='pwdlg';d.setAttribute('role','dialog');d.setAttribute('aria-label','Reset password');
+  d.innerHTML='<div class="pcard" style="max-width:440px"><h2 style="margin:0 0 6px">Reset password?</h2><p style="margin:0 0 10px">Student: <b>'+esc(st.full_name||'')+'</b> (ID '+esc(sid)+')</p><p class="hint" style="margin:0 0 12px">A strong temporary password will be created and shown once. The student must choose a new password the next time they sign in.</p><div class="flex"><button class="btn primary" id="pwgo" onclick="doResetPw(\''+esc(sid)+'\')">Reset password</button><button class="btn ghost" onclick="document.getElementById(\'pwdlg\').remove()">Cancel</button></div></div>';
+  d.addEventListener('click',function(e){if(e.target===d)d.remove()});
   document.body.appendChild(d);
 }
 async function doResetPw(sid){
-  var pw=$('np1').value;
-  if(!validPassword(pw)){toast('The password needs at least 8 characters, with letters and numbers.');return}
-  var r=await sb.functions.invoke('reset-student-password',{body:{student_id:sid,password:pw}});
-  if(r.error||!r.data||!r.data.ok){toast('The password could not be reset. The reset function may not be set up yet (see the guide).');return}
-  var o=document.getElementById('pwdlg');if(o)o.remove();toast('Password reset. Give the student the new password.');
+  var go=document.getElementById('pwgo');if(go)go.disabled=true;
+  var r=await sb.functions.invoke('reset-student-password',{body:{student_id:sid}});
+  if(r.error||!r.data||!r.data.ok||!r.data.password){
+    var o=document.getElementById('pwdlg');if(o)o.remove();
+    toast('The password could not be reset. The reset function may not be set up yet (see the guide).');return;
+  }
+  showTempPw(sid,r.data.password);loadStudents().then(function(){if(route()==='admin')render()});
+}
+function showTempPw(sid,pw){
+  var st=(state.students||[]).filter(function(x){return x.student_id===sid})[0]||{student_id:sid,full_name:'',phone:''};
+  var old=document.getElementById('pwdlg');if(old)old.remove();
+  var d=document.createElement('div');d.className='lb pd';d.id='pwdlg';d.setAttribute('role','dialog');d.setAttribute('aria-label','Temporary password');
+  var msg='Hello '+(st.full_name||'')+', your NAMSA-PU Welfare Portal password has been reset. Student ID: '+sid+'. Temporary password: '+pw+'. Please sign in at '+siteUrl()+' and choose a new password straight away.';
+  d.innerHTML='<div class="pcard" style="max-width:440px;text-align:center"><h2 style="margin:0 0 6px">Password reset</h2><p class="hint" style="margin:0 0 10px">Temporary password for <b>'+esc(st.full_name||sid)+'</b>. It is shown only now. Copy it or send it, then close this window.</p>'
+    +'<div class="refbox" id="tmppw" style="font-family:ui-monospace,Menlo,monospace;letter-spacing:.08em">'+esc(pw)+'</div>'
+    +'<div class="flex" style="justify-content:center"><button class="btn primary" onclick="copyTempPw()">Copy password</button>'+(st.phone?'<button class="btn dark" onclick="waTempPw(\''+esc(sid)+'\')">Send on WhatsApp</button>':'')+'</div>'
+    +'<p class="hint" style="margin-top:12px">The student will be asked to choose a new password at their next sign-in.</p><button class="btn ghost" style="width:100%;margin-top:8px" onclick="document.getElementById(\'pwdlg\').remove()">Close</button></div>';
+  d._msg=msg;d._sid=sid;d._pw=pw;
+  document.body.appendChild(d);
+}
+function copyTempPw(){var d=document.getElementById('pwdlg');if(!d)return;try{navigator.clipboard.writeText(d._pw).then(function(){toast('Copied')},function(){toast('Press and hold the password to copy it')})}catch(e){toast('Press and hold the password to copy it')}}
+function waTempPw(sid){
+  var d=document.getElementById('pwdlg'),st=(state.students||[]).filter(function(x){return x.student_id===sid})[0];
+  if(!d||!st||!st.phone)return;
+  window.open('https://wa.me/'+waNum(st.phone)+'?text='+encodeURIComponent(d._msg),'_blank','noopener');
 }
 function getR(ref){return REPORTS.filter(function(x){return x.ref===ref})[0]}
 async function setStatus(ref){
