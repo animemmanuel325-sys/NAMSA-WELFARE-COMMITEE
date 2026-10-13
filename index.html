@@ -493,6 +493,7 @@ var DEFAULTS={
     {id:'e7',name:'Name to be added',position:'Organizer',desc:'',photo:''}
   ],
   docs:{head:'Anim Emmanuel',secretary:'Victoria Efua Ainoo Morrison',treasurer:'',presidentName:'',nsecretaryName:'',president:'The President, NAMSA-PU',generalSecretary:'The General Secretary, NAMSA-PU',patron:'The Patron, NAMSA-PU',controller:'The Financial Controller, NAMSA-PU',amounts:{funeral:500,naming:250,wedding:300}},
+  accounts:{requireLogin:false},
   ads:{enabled:true,heading:'Advertisements',contact:'Want to advertise here? Please contact the NAMSA-PU Welfare Committee.',items:[]},
   letter:{to:'The Financial Controller, NAMSA',cc:'The General Secretary, NAMSA-PU; The President, NAMSA-PU; The Patron, NAMSA-PU',head:'Emmanuel Anim',sec:'Victoria Efua Ainoo Morrison'},
   committeeV:2,
@@ -580,6 +581,7 @@ function ensureShape(){
     if(!C.site||typeof C.site!=='object')C.site={};
     ['name','tagline','welcome','about'].forEach(function(k){if(typeof C.site[k]!=='string')C.site[k]=DEFAULTS.site[k]});
     if(!C.notify||typeof C.notify!=='object')C.notify={alertEmail:'',sendMemberEmails:true};
+    if(!C.accounts||typeof C.accounts!=='object')C.accounts={requireLogin:false};
     if(!C.ads||typeof C.ads!=='object')C.ads=clone(DEFAULTS.ads);
     if(!Array.isArray(C.ads.items))C.ads.items=[];
     C.ads.items=C.ads.items.filter(function(x){return x&&typeof x==='object'});
@@ -636,8 +638,13 @@ async function pushContent(){
   Object.keys(C).forEach(function(k){var v=contentVal(k),j=JSON.stringify(v);if(_pushed[k]!==j)rows.push({key:k,value:v,_j:j})});
   if(!rows.length)return;
   var res=await sb.from('site_content').upsert(rows.map(function(x){return {key:x.key,value:x.value}}));
-  if(res.error){toast(errMsg(res.error));return}
-  rows.forEach(function(x){_pushed[x.key]=x._j});
+  if(!res.error){rows.forEach(function(x){_pushed[x.key]=x._j});return}
+  var bad=[];
+  for(var i=0;i<rows.length;i++){
+    var one=await sb.from('site_content').upsert([{key:rows[i].key,value:rows[i].value}]);
+    if(one.error)bad.push(rows[i].key);else _pushed[rows[i].key]=rows[i]._j;
+  }
+  if(bad.length)toast('Some settings could not be saved ('+bad.join(', ')+'). Run the latest database update, then try again.');
 }
 function saveR(){if(!LIVE)LS.set('nw_reports',REPORTS)}
 function logit(who,action){
@@ -657,7 +664,7 @@ document.addEventListener('click',bumpIdle);document.addEventListener('keydown',
 
 /* ---------- routing ---------- */
 var NAV=[['home','Home'],['about','About'],['executives','Executives'],['committee','Committee'],['standing-orders','Standing Orders'],['track','Track My Report'],['contact','Contact']];
-var state={sel:{},cat:null,sub:'',anon:false,adminTab:'reports',openReport:null,filter:{q:'',cat:'',status:''},done:null,trackRef:null,edit:{}};
+var state={hasSession:false,trackMode:'code',myReqs:null,myReqsLoaded:false,students:null,studentsLoaded:false,sq:'',sel:{},cat:null,sub:'',anon:false,adminTab:'reports',openReport:null,filter:{q:'',cat:'',status:''},done:null,trackRef:null,edit:{}};
 function go(r){if(location.hash==='#/'+r){render()}else{location.hash='#/'+r}}
 function route(){return (location.hash.replace('#/','')||'home').split('?')[0]}
 function toggleNav(){var n=$('nav'),b=$('menuBtn');var o=n.classList.toggle('open');b.setAttribute('aria-expanded',o)}
@@ -680,6 +687,7 @@ function heroArt(){
 function drawNav(){
   var r=route();
   var h=NAV.map(function(n){return '<a href="#/'+n[0]+'"'+(r===n[0]?' class="active" aria-current="page"':'')+'>'+esc(n[1])+'</a>'}).join('');
+  if(LIVE)h+='<a href="#/account"'+(['account','login','register'].indexOf(r)>-1?' class="active" aria-current="page"':'')+'>'+(ME?'My account':'Student sign in')+'</a>';
   h+='<a class="cta alt" href="#/report?issue">Report an issue</a><a class="cta" href="#/report">Request support</a>';
   $('nav').innerHTML=h;
   $('nav').classList.remove('open');$('menuBtn').setAttribute('aria-expanded','false');
@@ -828,6 +836,7 @@ VIEWS.contact=function(){return '<section class="blk"><div class="wrap"><h1>Cont
 /* ---------- report form ---------- */
 VIEWS.report=function(){
   if(state.done)return confirmView();
+  if(LIVE&&C.accounts&&C.accounts.requireLogin&&!ME)return loginPrompt('Please sign in with your student account to send a request.');
   if(!state.cat){
     if(location.hash.indexOf('?issue')>-1){var f=C.categories.filter(function(k){return /issue/i.test(k.label)})[0];if(f){state.cat=f.id;return VIEWS.report()}}
     return '<section class="blk"><div class="wrap" style="max-width:640px"><h1>Request support</h1><p>What do you need help with?</p><div class="opts">'
@@ -906,7 +915,7 @@ function confirmView(){
   +'<h1>Your tracking code</h1><div class="refbox" id="refbox">'+esc(r.ref)+'</div>'
   +'<div class="card"><p><b>Date submitted:</b> '+esc(fmt(r.created))+'</p><p><b>Category:</b> '+esc(r.category)+(r.sub?' ('+esc(r.sub)+')':'')+'</p><p style="margin:0"><b>Current status:</b> '+badge(r.status)+'</p></div>'
   +(r.emergency?'<div class="urgent" style="margin-top:14px"><strong>Emergency?</strong> Call '+phoneLink(C.contact.emergency,'<b>'+esc(C.contact.emergency)+'</b>')+' now.</div>':'')
-  +'<h3 style="margin-top:20px">How to track it</h3><p>Open <b>Track My Report</b> and enter this tracking code'+(r.anon?'.':' with the last 4 digits of your phone number.')+'</p>'
+  +(ME&&!r.anon?'<div class="note ok">This request is also saved in <a href="#/account"><b>My account</b></a>, so you can follow it any time after you sign in.</div>':'')+'<h3 style="margin-top:20px">How to track it</h3><p>Open <b>Track My Report</b> and enter this tracking code'+(r.anon?'.':' with the last 4 digits of your phone number.')+'</p>'
   +(r.email&&C.notify.sendMemberEmails&&!LIVE?'<p class="hint">A confirmation with your tracking code would be emailed to '+esc(r.email)+' (email sending is simulated in this prototype).</p>':'')
   +'<div class="flex"><a class="btn dark" href="#/track" onclick="state.trackRef=\''+esc(r.ref)+'\';state.done=null">Track this report</a><button class="btn ghost" onclick="copyRef()">Copy number</button><button class="btn ghost" onclick="state.done=null;go(\'home\')">Done</button></div></div></section>';
 }
@@ -921,7 +930,7 @@ VIEWS.track=function(){
 function doTrack(e){
   e.preventDefault();
   var ref=normCode($('tr').value),p4=$('t4').value.trim();
-  if(LIVE){liveTrack(ref,p4).then(function(r2){if(!r2){$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return}$('terr').textContent='';state.trackRef=ref;state.track4=p4;drawTrack(r2)});return false}
+  if(LIVE){liveTrack(ref,p4).then(function(r2){if(!r2){$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return}$('terr').textContent='';state.trackRef=ref;state.track4=p4;state.trackMode='code';drawTrack(r2)});return false}
   var r=REPORTS.filter(function(x){return x.ref===ref})[0];
   var ok=r&&(r.anon||(p4&&r.phone.replace(/\D/g,'').slice(-4)===p4));
   if(!ok){$('terr').textContent='We could not find a report with those details. Check the number and try again.';$('tres').innerHTML='';return false}
@@ -968,6 +977,13 @@ async function memberReply(ref){
     try{
       toast('Sending...');
       var packed=await packFiles(vf.files);
+      if(state.trackMode==='mine'){
+        var mr=await sb.rpc('my_reply',{p_ref:ref,p_text:t,p_files:packed});
+        if(mr.error||!mr.data)throw (mr.error||new Error('failed'));
+        toast('Reply sent');await loadMyReqs(false);
+        var ix=(state.myReqs||[]).findIndex(function(x){return x.ref===ref});if(ix>-1)openMine(ix);
+        return;
+      }
       var res=await sb.rpc('member_reply',{p_ref:ref,p_last4:state.track4||'',p_text:t,p_files:packed});
       if(res.error||!res.data)throw (res.error||new Error('failed'));
       toast('Reply sent');
@@ -1005,7 +1021,7 @@ async function doLiveLogin(e){
   var r=await sb.auth.signInWithPassword({email:$('em2').value.trim(),password:$('pw').value});
   if(r.error){lk.n=(lk.n||0)+1;if(lk.n>=5){lk.until=Date.now()+15*60000;lk.n=0}LS.set('nw_lock',lk);$('lerr').textContent='Wrong email or password.';b.disabled=false;return false}
   LS.set('nw_lock',{n:0,until:0});
-  var ok=await loadStaff(r.data.user);
+  var ok=await loadStaff(r.data.user,true);
   if(!ok){$('lerr').textContent='This account is not set up as a Welfare admin yet. Ask the Super Administrator.';b.disabled=false;return false}
   state.mfa=null;render();return false;
 }
@@ -1052,14 +1068,20 @@ async function finishLogin(){
   if(SESSION.role!=='content')await loadReports();
   render();
 }
-async function loadStaff(user){
+async function loadStaff(user,strict){
   var q=await sb.from('staff').select('role,name').eq('user_id',user.id).maybeSingle();
   if(q.data){SESSION={role:q.data.role,name:q.data.name||ROLES[q.data.role],email:user.email,ok2:false};bumpIdle();return true}
-  await sb.auth.signOut();return false;
+  if(strict)await sb.auth.signOut();   /* the admin form signs out anyone who is not staff; the public site keeps student sessions */
+  return false;
 }
 async function restoreSession(){
   var r=await sb.auth.getSession();
-  if(r.data&&r.data.session){var ok=await loadStaff(r.data.session.user);if(ok){var aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(aal.data&&aal.data.currentLevel==='aal2'){SESSION.ok2=true;if(SESSION.role!=='content')await loadReports()}}}
+  if(r.data&&r.data.session){
+    state.hasSession=true;
+    var ok=await loadStaff(r.data.session.user,false);
+    if(ok){var aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(aal.data&&aal.data.currentLevel==='aal2'){SESSION.ok2=true;if(SESSION.role!=='content')await loadReports()}}
+    else{await loadMe()}
+  }
 }
 async function loadContent(){
   var r=await sb.from('site_content').select('key,value');
@@ -1071,7 +1093,7 @@ async function loadContent(){
   fixLetterDefaults();
   fixDocsDefaults();
 }
-function doSignOut(){if(LIVE)sb.auth.signOut();SESSION=null;REPORTS=[];LOG=[];state.mfa=null;go('admin')}
+function doSignOut(){if(LIVE)sb.auth.signOut();SESSION=null;REPORTS=[];LOG=[];state.mfa=null;state.hasSession=false;ME=null;go('admin')}
 var _hiddenAt=0;
 document.addEventListener('visibilitychange',function(){
   if(document.hidden){_hiddenAt=Date.now()}
@@ -1115,6 +1137,7 @@ async function refreshReports(){await loadReports();render();toast('Updated')}
 AFTER.admin=function(){
   if(!LIVE||!SESSION||!SESSION.ok2||SESSION.role==='content')return;
   if((state.adminTab==='reports'||state.adminTab==='stats')&&Date.now()-_lastLoad>30000){loadReports().then(function(){if(route()==='admin')render()})}
+  if(state.adminTab==='students'&&!state.studentsLoaded){loadStudents().then(function(){if(route()==='admin')render()})}
   if(state.adminTab==='log'&&Date.now()-_lastLog>15000){loadLog().then(function(){if(route()==='admin')render()})}
   if((state.adminTab==='dochist'||state.openReport)&&Date.now()-_lastDocs>15000){loadDocs().then(function(){if(route()==='admin'&&!document.querySelector('.lt'))render()})}
 };
@@ -1167,7 +1190,7 @@ async function openStaffFile(fid){
 }
 async function downloadMemberFile(fid){
   toast('Opening...');
-  var res=await sb.rpc('get_member_file',{p_ref:state.trackRef,p_last4:state.track4||'',p_fid:fid});
+  var res=state.trackMode==='mine'?await sb.rpc('my_file',{p_ref:state.trackRef,p_fid:fid}):await sb.rpc('get_member_file',{p_ref:state.trackRef,p_last4:state.track4||'',p_fid:fid});
   if(res.error||!res.data){toast('Could not open that file. Check your connection and try again.');return}
   fileSheet(res.data.name,res.data.mime,res.data.data);
 }
@@ -1231,7 +1254,7 @@ VIEWS.admin=function(){
   }
   var role=SESSION.role;
   var tabs=[];
-  if(role==='super'||role==='welfare'){tabs.push(['reports','Requests'],['stats','Welfare statistics'],['dochist','Document history'],['letters','Letter templates'])}
+  if(role==='super'||role==='welfare'){tabs.push(['reports','Requests'],['stats','Welfare statistics'],['dochist','Document history'],['letters','Letter templates'],['students','Student accounts'])}
   if(role==='super'||role==='content'){tabs.push(['people','Executives and committee leaders'],['members','Welfare members'],['pages','Pages'],['gallery','Pictures'],['ads','Advertisements'],['appearance','Logo and colours'],['contact','Contact details'])}
   if(role==='super'){tabs.push(['settings','Categories and alerts'])}
   if(role==='super'||role==='welfare'){tabs.push(['log','Activity'])}
@@ -1844,7 +1867,7 @@ function docSettings(){
 function waSettings(){
   return '<h2 style="margin-top:30px">WhatsApp messages to members</h2><div class="edit-item"><p class="hint" style="margin-top:0">When a request is approved, the system places the acceptance letter on the member\'s tracking page and prepares a WhatsApp message to the phone number on the request. Normally you tap <b>Open WhatsApp</b>, then <b>Send</b>. If you have set up the WhatsApp Business connection (see the setup guide), tick the box so messages are sent automatically.</p><div class="check"><input type="checkbox" id="wa1" '+(C.notify&&C.notify.whatsappAuto?'checked':'')+' onchange="C.notify.whatsappAuto=this.checked;saveC();toast(\'Saved\')"><label for="wa1" style="margin:0">Automatic WhatsApp sending is set up</label></div></div>';
 }
-ADMIN.settings=function(){return ADMIN.settings0()+docSettings()+waSettings()};
+ADMIN.settings=function(){return ADMIN.settings0()+docSettings()+waSettings()+acctSettings()};
 
 
 /* ---------- approval: acceptance letter + WhatsApp ---------- */
@@ -2078,6 +2101,194 @@ async function moneyWhatsApp(ref){
   await opNote(r,'whatsapp','[money-ready] WhatsApp opened for sending.');
   var o=document.getElementById('moneydlg');if(o)o.remove();
   toast('WhatsApp opened. Tap Send there to deliver the message.');render();
+}
+
+/* ---------- student accounts: Student ID + password (checked by Supabase, not by this page) ---------- */
+var ME=null;
+var STUDENT_DOMAIN=(NAMSA_CFG&&NAMSA_CFG.studentDomain)||'students.namsa-pu.invalid';
+function normStudentId(v){return String(v||'').trim().toUpperCase()}
+function studentKey(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
+function studentEmail(v){return studentKey(v)+'@'+STUDENT_DOMAIN}
+function validStudentId(v){var x=normStudentId(v);return /^[A-Z0-9\/_-]{4,30}$/.test(x)&&studentKey(x).length>=4}
+function validPassword(p){return typeof p==='string'&&p.length>=8&&p.length<=72&&/[A-Za-z]/.test(p)&&/[0-9]/.test(p)}
+function noAcct(){return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Student accounts</h1><p>Student accounts are only available on the connected website.</p></div></section>'}
+function loginPrompt(msg){
+  return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Please sign in</h1><p>'+esc(msg)+'</p><div class="flex"><a class="btn primary" href="#/login">Student sign in</a><a class="btn dark" href="#/register">Create an account</a></div></div></section>';
+}
+async function loadMe(){
+  ME=null;if(!LIVE)return;
+  try{
+    var s0=await sb.auth.getSession();if(!s0.data||!s0.data.session)return;
+    state.hasSession=true;
+    var q=await sb.from('students').select('student_id,full_name,phone,programme,level').eq('user_id',s0.data.session.user.id).maybeSingle();
+    if(q.data)ME=q.data;
+  }catch(e){}
+}
+function studentSignOut(){
+  if(LIVE)sb.auth.signOut();ME=null;state.hasSession=false;state.myReqs=null;state.myReqsLoaded=false;state.trackMode='code';
+  toast('You are signed out.');go('home');
+}
+VIEWS.login=function(){
+  if(!LIVE)return noAcct();
+  if(ME)return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>You are signed in</h1><p>Signed in as <b>'+esc(ME.student_id)+'</b>.</p><a class="btn dark" href="#/account">Go to My account</a></div></section>';
+  return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Student sign in</h1><form onsubmit="return doStudentLogin(event)">'
+    +'<label for="sl_id">Student ID</label><input type="text" id="sl_id" autocomplete="username" autocapitalize="characters" required>'
+    +'<label for="sl_pw">Password</label><input type="password" id="sl_pw" autocomplete="current-password" required>'
+    +'<p id="slerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Sign in</button></form>'
+    +'<p style="margin-top:16px">New here? <a href="#/register"><b>Create an account</b></a></p>'
+    +'<p class="hint">Forgot your password? Ask the Welfare Committee to reset it for you.</p></div></section>';
+};
+async function doStudentLogin(e){
+  e.preventDefault();
+  var b=e.target.querySelector('button');
+  var lk=LS.get('nw_slock',{n:0,until:0});
+  if(lk.until>Date.now()){$('slerr').textContent='Too many tries. Please wait 15 minutes and try again.';return false}
+  var id=$('sl_id').value,pw=$('sl_pw').value;
+  if(!validStudentId(id)){$('slerr').textContent='Enter your student ID.';return false}
+  b.disabled=true;
+  var r=await sb.auth.signInWithPassword({email:studentEmail(id),password:pw});
+  if(r.error){lk.n=(lk.n||0)+1;if(lk.n>=5){lk.until=Date.now()+15*60000;lk.n=0}LS.set('nw_slock',lk);$('slerr').textContent='Wrong student ID or password.';b.disabled=false;return false}
+  LS.set('nw_slock',{n:0,until:0});
+  state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
+  await loadMe();
+  toast('Welcome back');go('account');return false;
+}
+VIEWS.register=function(){
+  if(!LIVE)return noAcct();
+  if(ME)return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>You already have an account</h1><a class="btn dark" href="#/account">Go to My account</a></div></section>';
+  return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Create your student account</h1><p>Use your own Student ID. Each Student ID can have only one account.</p><form onsubmit="return doRegister(event)">'
+    +'<label for="rg_id">Student ID</label><input type="text" id="rg_id" autocapitalize="characters" autocomplete="username" required>'
+    +'<label for="rg_nm">Full name</label><input type="text" id="rg_nm" autocomplete="name" required>'
+    +'<div class="row two"><div><label for="rg_ph">Phone number</label><input type="tel" id="rg_ph" autocomplete="tel" inputmode="tel" required></div><div><label for="rg_lv">Level</label><select id="rg_lv" required><option value="">Choose</option><option>100</option><option>200</option><option>300</option><option>400</option><option>Other</option></select></div></div>'
+    +'<label for="rg_pg">Programme / department</label><input type="text" id="rg_pg" required>'
+    +'<label for="rg_pw">Password <span class="hint">(at least 8 characters, with letters and numbers)</span></label><input type="password" id="rg_pw" autocomplete="new-password" required>'
+    +'<label for="rg_p2">Confirm password</label><input type="password" id="rg_p2" autocomplete="new-password" required>'
+    +'<p id="rgerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn primary" type="submit" style="width:100%">Create account</button></form>'
+    +'<p style="margin-top:16px">Already have an account? <a href="#/login"><b>Sign in</b></a></p></div></section>';
+};
+async function doRegister(e){
+  e.preventDefault();
+  var b=e.target.querySelector('button'),err=$('rgerr');
+  var id=normStudentId($('rg_id').value),nm=$('rg_nm').value.trim(),ph=$('rg_ph').value.trim(),lv=$('rg_lv').value,pg=$('rg_pg').value.trim(),pw=$('rg_pw').value,p2=$('rg_p2').value;
+  var m=[];
+  if(!validStudentId(id))m.push('Enter a valid student ID (letters, numbers and / - _ only).');
+  if(nm.length<2)m.push('Enter your full name.');
+  if(!/^[0-9+\s()-]{7,}$/.test(ph))m.push('Enter a valid phone number.');
+  if(!lv)m.push('Choose your level.');
+  if(!pg)m.push('Enter your programme.');
+  if(!validPassword(pw))m.push('The password needs at least 8 characters, with letters and numbers.');
+  if(pw!==p2)m.push('The two passwords do not match.');
+  if(m.length){err.innerHTML=m.map(esc).join('<br>');return false}
+  b.disabled=true;err.textContent='';
+  var su=await sb.auth.signUp({email:studentEmail(id),password:pw});
+  if(su.error){
+    err.textContent=/already|registered|exists/i.test(String(su.error.message||''))?'That student ID already has an account. Please sign in instead.':'We could not create the account. Please check your details and try again.';
+    b.disabled=false;return false;
+  }
+  if(!su.data||!su.data.session){err.textContent='The account was created, but sign-up is not fully set up yet. Please tell the Welfare Committee.';b.disabled=false;return false}
+  var rg=await sb.rpc('register_student',{p_student_id:id,p_full_name:nm,p_phone:ph,p_programme:pg,p_level:lv});
+  if(rg.error){await sb.auth.signOut();err.textContent=errMsg(rg.error);b.disabled=false;return false}
+  state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
+  await loadMe();toast('Your account is ready');go('account');return false;
+}
+function completeProfileView(){
+  return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Finish your profile</h1><p>Your account is signed in, but the student profile is missing. Fill it in once.</p><form onsubmit="return doCompleteProfile(event)">'
+    +'<label for="cp_id">Student ID</label><input type="text" id="cp_id" autocapitalize="characters" required>'
+    +'<label for="cp_nm">Full name</label><input type="text" id="cp_nm" required>'
+    +'<div class="row two"><div><label for="cp_ph">Phone number</label><input type="tel" id="cp_ph" inputmode="tel" required></div><div><label for="cp_lv">Level</label><select id="cp_lv" required><option value="">Choose</option><option>100</option><option>200</option><option>300</option><option>400</option><option>Other</option></select></div></div>'
+    +'<label for="cp_pg">Programme / department</label><input type="text" id="cp_pg" required>'
+    +'<p id="cperr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn primary" type="submit" style="width:100%">Save</button></form></div></section>';
+}
+async function doCompleteProfile(e){
+  e.preventDefault();
+  var id=normStudentId($('cp_id').value);
+  if(!validStudentId(id)){$('cperr').textContent='Enter a valid student ID.';return false}
+  var rg=await sb.rpc('register_student',{p_student_id:id,p_full_name:$('cp_nm').value.trim(),p_phone:$('cp_ph').value.trim(),p_programme:$('cp_pg').value.trim(),p_level:$('cp_lv').value});
+  if(rg.error){$('cperr').textContent=errMsg(rg.error);return false}
+  await loadMe();render();return false;
+}
+VIEWS.account=function(){
+  if(!LIVE)return noAcct();
+  if(!state.hasSession)return loginPrompt('Sign in to see your requests and send new ones.');
+  if(!ME)return completeProfileView();
+  var h='<section class="blk"><div class="wrap" style="max-width:760px"><div class="flex spread"><h1 style="margin:0">My account</h1><button class="btn ghost small" onclick="studentSignOut()">Sign out</button></div>'
+    +'<div class="card" style="margin-top:14px"><p style="margin:0"><b>'+esc(ME.full_name)+'</b></p><p style="margin:0">Student ID: '+esc(ME.student_id)+'</p><p class="hint" style="margin:6px 0 0">Your Student ID cannot be changed. Contact the Welfare Committee if it is wrong.</p></div>'
+    +'<div class="flex" style="margin:14px 0"><a class="btn primary" href="#/report">Request support</a><a class="btn ghost" href="#/report?issue">Report an issue</a></div>'
+    +'<h2>My requests</h2>';
+  if(!state.myReqsLoaded)h+='<p class="hint">Loading your requests...</p>';
+  else if(!(state.myReqs||[]).length)h+='<div class="card"><p style="margin:0">You have no requests yet. Tap <b>Request support</b> to send one.</p></div>';
+  else h+=state.myReqs.map(function(r,i){return '<button class="opt" style="margin-bottom:10px" onclick="openMine('+i+')"><span><b>'+esc(r.category)+(r.sub?' ('+esc(r.sub)+')':'')+'</b><br><span class="hint">'+esc(r.ref)+' &middot; '+esc(fmtDay(new Date(r.created_at).getTime()))+'</span></span><span>'+badge(r.status)+'</span></button>'}).join('');
+  h+='<div id="tres"></div>';
+  h+='<h2 style="margin-top:28px">My details</h2><div class="card"><div class="row two"><div><label for="pf_ph" style="margin-top:0">Phone number</label><input type="tel" id="pf_ph" value="'+esc(ME.phone||'')+'" inputmode="tel"></div><div><label for="pf_lv" style="margin-top:0">Level</label><select id="pf_lv">'+['100','200','300','400','Other'].map(function(x){return '<option'+(ME.level===x?' selected':'')+'>'+x+'</option>'}).join('')+'</select></div></div>'
+    +'<label for="pf_pg">Programme / department</label><input type="text" id="pf_pg" value="'+esc(ME.programme||'')+'"><div style="margin-top:12px"><button class="btn dark small" onclick="saveProfile()">Save details</button></div></div>'
+    +'<h2 style="margin-top:28px">Change password</h2><div class="card"><label for="pw1" style="margin-top:0">New password</label><input type="password" id="pw1" autocomplete="new-password"><label for="pw2">Confirm new password</label><input type="password" id="pw2" autocomplete="new-password"><div style="margin-top:12px"><button class="btn dark small" onclick="changeMyPassword()">Change password</button></div></div>'
+    +'</div></section>';
+  return h;
+};
+AFTER.account=function(){if(LIVE&&state.hasSession&&ME&&!state.myReqsLoaded)loadMyReqs(true)};
+async function loadMyReqs(doRender){
+  var r=await sb.rpc('my_requests');
+  state.myReqs=(r&&r.data)||[];state.myReqsLoaded=true;
+  if(doRender&&route()==='account')render();
+}
+function openMine(i){
+  var x=(state.myReqs||[])[i];if(!x)return;
+  var r2={ref:x.ref,category:x.category,sub:x.sub||'',created:new Date(x.created_at).getTime(),status:x.status,history:x.history||[],messages:x.messages||[],anon:x.anon};
+  state.trackMode='mine';state.trackRef=x.ref;state.track4='';
+  drawTrack(r2);
+  var t=$('tres');if(t&&t.scrollIntoView)t.scrollIntoView({block:'start'});
+}
+async function saveProfile(){
+  var r=await sb.rpc('update_my_profile',{p_phone:$('pf_ph').value,p_programme:$('pf_pg').value,p_level:$('pf_lv').value});
+  if(r.error||!r.data){toast(errMsg(r.error));return}
+  await loadMe();toast('Details saved');render();
+}
+async function changeMyPassword(){
+  var a=$('pw1').value,b=$('pw2').value;
+  if(!validPassword(a)){toast('The password needs at least 8 characters, with letters and numbers.');return}
+  if(a!==b){toast('The two passwords do not match.');return}
+  var r=await sb.auth.updateUser({password:a});
+  if(r.error){toast('The password could not be changed. Sign in again and try once more.');return}
+  $('pw1').value='';$('pw2').value='';toast('Password changed');
+}
+AFTER.report=function(){
+  if(!ME)return;
+  var f={fn:ME.full_name,sid:ME.student_id,ph:ME.phone||'',pg:ME.programme||'',lv:ME.level||''};
+  Object.keys(f).forEach(function(k){var el=document.getElementById(k);if(el){if(!el.value)el.value=f[k];if(k==='fn'||k==='sid')el.readOnly=true}});
+};
+
+/* ---------- admin: student accounts ---------- */
+async function loadStudents(){
+  var r=await sb.from('students').select('student_id,full_name,phone,programme,level,created_at').order('created_at',{ascending:false}).limit(2000);
+  state.students=(r.data||[]);state.studentsLoaded=true;
+}
+ADMIN.students=function(){
+  var q=(state.sq||'').toLowerCase(),isSuper=SESSION&&SESSION.role==='super';
+  var list=(state.students||[]).filter(function(x){return !q||[x.student_id,x.full_name,x.programme,x.level,x.phone].join(' ').toLowerCase().indexOf(q)>-1});
+  var h='<h2>Student accounts</h2><p class="hint">Students create their own account with their Student ID. Each Student ID can have only one account.</p>'
+    +'<label for="sq" style="margin-top:0">Search</label><input type="text" id="sq" value="'+esc(state.sq||'')+'" placeholder="Student ID, name, programme" oninput="state.sq=this.value;keepFocus(\'sq\')">';
+  if(!state.studentsLoaded)return h+'<p class="hint" style="margin-top:14px">Loading...</p>';
+  if(!list.length)return h+'<div class="card" style="margin-top:14px"><p style="margin:0">No student accounts found.</p></div>';
+  h+='<p class="hint" style="margin:12px 0 6px">'+list.length+' account(s)</p><div class="scroll-x"><table><thead><tr><th>Student ID</th><th>Name</th><th>Programme</th><th>Level</th><th>Phone</th><th>Registered</th>'+(isSuper?'<th></th>':'')+'</tr></thead><tbody>'
+    +list.map(function(x){return '<tr><td><b>'+esc(x.student_id)+'</b></td><td>'+esc(x.full_name)+'</td><td>'+esc(x.programme||'')+'</td><td>'+esc(x.level||'')+'</td><td>'+(x.phone?phoneLink(x.phone):'')+'</td><td>'+esc(fmtDay(new Date(x.created_at).getTime()))+'</td>'+(isSuper?'<td><button class="btn ghost small" onclick="resetStudentPw(\''+esc(x.student_id)+'\')">Reset password</button></td>':'')+'</tr>'}).join('')+'</tbody></table></div>';
+  return h;
+};
+function resetStudentPw(sid){
+  if(!SESSION||SESSION.role!=='super'){toast('Only the Super Administrator can do this.');return}
+  var old=document.getElementById('pwdlg');if(old)old.remove();
+  var d=document.createElement('div');d.className='lb pd';d.id='pwdlg';d.setAttribute('role','dialog');
+  d.innerHTML='<div class="pcard" style="max-width:420px"><h2 style="margin:0 0 6px">Reset password</h2><p class="hint" style="margin:0 0 8px">Student ID: <b>'+esc(sid)+'</b>. Give the student this temporary password, and ask them to change it after signing in.</p><label for="np1" style="margin-top:0">New temporary password</label><input type="text" id="np1" autocomplete="off"><p class="hint">At least 8 characters, with letters and numbers.</p><div class="flex" style="margin-top:10px"><button class="btn primary" onclick="doResetPw(\''+esc(sid)+'\')">Set password</button><button class="btn ghost" onclick="document.getElementById(\'pwdlg\').remove()">Cancel</button></div></div>';
+  document.body.appendChild(d);
+}
+async function doResetPw(sid){
+  var pw=$('np1').value;
+  if(!validPassword(pw)){toast('The password needs at least 8 characters, with letters and numbers.');return}
+  var r=await sb.functions.invoke('reset-student-password',{body:{student_id:sid,password:pw}});
+  if(r.error||!r.data||!r.data.ok){toast('The password could not be reset. The reset function may not be set up yet (see the guide).');return}
+  var o=document.getElementById('pwdlg');if(o)o.remove();toast('Password reset. Give the student the new password.');
+}
+function acctSettings(){
+  return '<h2 style="margin-top:30px">Student accounts</h2><div class="edit-item"><div class="check"><input type="checkbox" id="rl1" '+(C.accounts&&C.accounts.requireLogin?'checked':'')+' onchange="C.accounts.requireLogin=this.checked;saveC();toast(\'Saved\')"><label for="rl1" style="margin:0">Students must sign in before they can submit a request</label></div><p class="hint" style="margin:8px 0 0">Off: anyone can still submit and track with a code, and signed-in students get their requests saved in My account. On: only signed-in students can submit. The database enforces this.</p></div>';
 }
 function getR(ref){return REPORTS.filter(function(x){return x.ref===ref})[0]}
 async function setStatus(ref){
