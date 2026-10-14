@@ -2116,7 +2116,11 @@ var ME=null;
 var STUDENT_DOMAIN=(NAMSA_CFG&&NAMSA_CFG.studentDomain)||'students.namsa-pu.invalid';
 function normStudentId(v){return String(v||'').trim().toUpperCase()}
 function studentKey(v){return String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'')}
-function studentEmail(v){return studentKey(v)+'@'+STUDENT_DOMAIN}
+function studentEmail(v){
+  var box=String((NAMSA_CFG&&NAMSA_CFG.studentMailbox)||'').trim().toLowerCase(),m=box.match(/^([a-z0-9._-]+)@([a-z0-9.-]+\.[a-z]{2,})$/);
+  if(m)return m[1]+'+'+studentKey(v)+'@'+m[2];          /* e.g. namsapu359+pu20210456@gmail.com : mail would only ever reach the committee */
+  return studentKey(v)+'@'+STUDENT_DOMAIN;
+}
 function validStudentId(v){var x=normStudentId(v);return /^[A-Z0-9\/_-]{4,30}$/.test(x)&&studentKey(x).length>=4}
 function validPassword(p){return typeof p==='string'&&p.length>=8&&p.length<=72&&/[A-Za-z]/.test(p)&&/[0-9]/.test(p)}
 function afterLoginGo(){var to=state.afterLogin;state.afterLogin=null;go(to&&to.indexOf('report')===0?to:'account')}
@@ -2126,6 +2130,16 @@ function mustChangeView(){
     +'<label for="pw2">Confirm new password</label><input type="password" id="pw2" autocomplete="new-password">'
     +'<div style="margin-top:14px"><button class="btn primary" style="width:100%" onclick="changeMyPassword()">Save new password</button></div></div></section>';
 }
+function authHint(e){
+  var code=String((e&&(e.code||e.error_code))||''),msg=String((e&&e.message)||''),st=e&&e.status,all=code+' '+msg;
+  if(/signup_disabled/i.test(code)||/signups? (are )?(not allowed|disabled)/i.test(msg))return {key:'signup_disabled',text:'New accounts are switched off. The committee must turn on "Allow new users to sign up" in Supabase (Authentication, Sign In / Providers).'};
+  if(/email_address_invalid/i.test(code)||/(email address|unable to validate email).*(invalid|not valid)|invalid.*email/i.test(msg))return {key:'email_address_invalid',text:'The account name made from your Student ID was refused by the sign-in service.'};
+  if(/user_already_exists|already (been )?registered|already exists/i.test(all))return {key:'exists',text:'That student ID already has an account. Please sign in instead.'};
+  if(/weak_password/i.test(code)||(/password/i.test(msg)&&/(short|weak|at least|characters)/i.test(msg)))return {key:'weak_password',text:'Choose a stronger password (at least 8 characters, with letters and numbers).'};
+  if(st===429||/rate.?limit/i.test(all))return {key:'rate_limit',text:'Too many attempts. Please wait a few minutes and try again.'};
+  return {key:code||('http_'+(st||'error')),text:'We could not create the account.'};
+}
+function hintText(h){return h.key==='exists'||h.key==='weak_password'||h.key==='rate_limit'?h.text:h.text+' (code: '+h.key+')'}
 function noAcct(){return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Student accounts</h1><p>Student accounts are only available on the connected website.</p></div></section>'}
 function loginPrompt(msg){
   return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Please sign in</h1><p>'+esc(msg)+'</p><div class="flex"><a class="btn primary" href="#/login">Student sign in</a><a class="btn dark" href="#/register">Create an account</a></div></div></section>';
@@ -2197,13 +2211,15 @@ async function doRegister(e){
   if(m.length){err.innerHTML=m.map(esc).join('<br>');return false}
   b.disabled=true;err.textContent='';
   var su=await sb.auth.signUp({email:studentEmail(id),password:pw});
-  if(su.error){
-    err.textContent=/already|registered|exists/i.test(String(su.error.message||''))?'That student ID already has an account. Please sign in instead.':'We could not create the account. Please check your details and try again.';
+  if(su.error){err.textContent=hintText(authHint(su.error));b.disabled=false;return false}
+  if(!su.data||!su.data.session){err.textContent='The account was created, but it still needs confirming. The committee must turn OFF "Confirm email" in Supabase (Authentication, Sign In / Providers, Email). (code: confirm_email_on)';b.disabled=false;return false}
+  var rg=await sb.rpc('register_student',{p_student_id:id,p_full_name:nm,p_phone:ph,p_programme:pg,p_level:lv});
+  if(rg.error){
+    await sb.auth.signOut();
+    var rc=String(rg.error.code||'');
+    err.textContent=(rc==='PGRST202'||rc==='42P01'||rc==='42883')?'The database update for student accounts has not been run yet. Please tell the Welfare Committee. (code: '+rc+')':errMsg(rg.error);
     b.disabled=false;return false;
   }
-  if(!su.data||!su.data.session){err.textContent='The account was created, but sign-up is not fully set up yet. Please tell the Welfare Committee.';b.disabled=false;return false}
-  var rg=await sb.rpc('register_student',{p_student_id:id,p_full_name:nm,p_phone:ph,p_programme:pg,p_level:lv});
-  if(rg.error){await sb.auth.signOut();err.textContent=errMsg(rg.error);b.disabled=false;return false}
   state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
   await loadMe();toast('Your account is ready');afterLoginGo();return false;
 }
