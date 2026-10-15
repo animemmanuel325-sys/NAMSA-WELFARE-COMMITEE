@@ -664,7 +664,7 @@ document.addEventListener('click',bumpIdle);document.addEventListener('keydown',
 
 /* ---------- routing ---------- */
 var NAV=[['home','Home'],['about','About'],['executives','Executives'],['committee','Committee'],['standing-orders','Standing Orders'],['track','Track My Report'],['contact','Contact']];
-var state={hasSession:false,trackMode:'code',myReqs:null,myReqsLoaded:false,students:null,studentsLoaded:false,sq:'',sel:{},cat:null,sub:'',anon:false,adminTab:'reports',openReport:null,filter:{q:'',cat:'',status:''},done:null,trackRef:null,edit:{}};
+var state={authSet:undefined,hasSession:false,trackMode:'code',myReqs:null,myReqsLoaded:false,students:null,studentsLoaded:false,sq:'',sel:{},cat:null,sub:'',anon:false,adminTab:'reports',openReport:null,filter:{q:'',cat:'',status:''},done:null,trackRef:null,edit:{}};
 function go(r){if(location.hash==='#/'+r){render()}else{location.hash='#/'+r}}
 function route(){return (location.hash.replace('#/','')||'home').split('?')[0]}
 function toggleNav(){var n=$('nav'),b=$('menuBtn');var o=n.classList.toggle('open');b.setAttribute('aria-expanded',o)}
@@ -1145,6 +1145,7 @@ async function refreshReports(){await loadReports();render();toast('Updated')}
 AFTER.admin=function(){
   if(!LIVE||!SESSION||!SESSION.ok2||SESSION.role==='content')return;
   if((state.adminTab==='reports'||state.adminTab==='stats')&&Date.now()-_lastLoad>30000){loadReports().then(function(){if(route()==='admin')render()})}
+  if(state.adminTab==='students'&&state.authSet===undefined)loadAuthSettings().then(function(){if(route()==='admin')render()});
   if(state.adminTab==='students'&&!state.studentsLoaded){loadStudents().then(function(){if(route()==='admin')render()})}
   if(state.adminTab==='log'&&Date.now()-_lastLog>15000){loadLog().then(function(){if(route()==='admin')render()})}
   if((state.adminTab==='dochist'||state.openReport)&&Date.now()-_lastDocs>15000){loadDocs().then(function(){if(route()==='admin'&&!document.querySelector('.lt'))render()})}
@@ -2130,6 +2131,15 @@ function mustChangeView(){
     +'<label for="pw2">Confirm new password</label><input type="password" id="pw2" autocomplete="new-password">'
     +'<div style="margin-top:14px"><button class="btn primary" style="width:100%" onclick="changeMyPassword()">Save new password</button></div></div></section>';
 }
+function legacyStudentEmail(v){return studentKey(v)+'@'+STUDENT_DOMAIN}
+function loginHint(e){
+  var code=String((e&&(e.code||e.error_code))||''),msg=String((e&&e.message)||''),st=e&&e.status,all=code+' '+msg;
+  if(/email_not_confirmed/i.test(code)||/email not confirmed/i.test(msg))return {key:'email_not_confirmed',text:'This account was created but never confirmed. The committee must turn OFF "Confirm email" in Supabase (Authentication, Sign In / Providers, Email) and delete this account (Authentication, Users) so it can be created again.'};
+  if(/invalid_credentials/i.test(code)||/invalid login credentials/i.test(msg))return {key:'invalid_credentials',text:'Wrong student ID or password.'};
+  if(/user_banned/i.test(code)||/banned/i.test(msg))return {key:'user_banned',text:'This account has been blocked. Please contact the Welfare Committee.'};
+  if(st===429||/rate.?limit/i.test(all))return {key:'rate_limit',text:'Too many attempts. Please wait a few minutes and try again.'};
+  return {key:code||('http_'+(st||'error')),text:'We could not sign you in.'};
+}
 function authHint(e){
   var code=String((e&&(e.code||e.error_code))||''),msg=String((e&&e.message)||''),st=e&&e.status,all=code+' '+msg;
   if(/signup_disabled/i.test(code)||/signups? (are )?(not allowed|disabled)/i.test(msg))return {key:'signup_disabled',text:'New accounts are switched off. The committee must turn on "Allow new users to sign up" in Supabase (Authentication, Sign In / Providers).'};
@@ -2140,6 +2150,30 @@ function authHint(e){
   return {key:code||('http_'+(st||'error')),text:'We could not create the account.'};
 }
 function hintText(h){return h.key==='exists'||h.key==='weak_password'||h.key==='rate_limit'?h.text:h.text+' (code: '+h.key+')'}
+
+/* ---------- is student sign-up switched on? (read from the sign-in service, no account needed) ---------- */
+async function loadAuthSettings(){
+  try{
+    var r=await fetch(SUPABASE_URL+'/auth/v1/settings',{headers:{apikey:SUPABASE_ANON_KEY}});
+    var j=await r.json();
+    state.authSet={disable_signup:!!j.disable_signup,autoconfirm:!!j.mailer_autoconfirm};
+  }catch(e){state.authSet=null}
+}
+function recheckAuth(){state.authSet=undefined;loadAuthSettings().then(function(){if(route()==='admin'||route()==='register')render()})}
+function signupPanel(){
+  var a=state.authSet;
+  if(a===undefined)return '<div class="card" style="margin-bottom:14px"><p style="margin:0" class="hint">Checking the student sign-up setup...</p></div>';
+  if(a===null)return '<div class="card" style="margin-bottom:14px"><p style="margin:0" class="hint">Could not check the sign-up setup right now.</p><button class="btn ghost small" style="margin-top:8px" onclick="recheckAuth()">Check again</button></div>';
+  function row(ok,label,fix){return '<p style="margin:0 0 10px"><span class="badge '+(ok?'good':'bad')+'">'+(ok?'OK':'Needs fixing')+'</span> <b>'+label+'</b>'+(ok?'':'<br><span class="hint">'+fix+'</span>')+'</p>'}
+  return '<div class="card" style="margin-bottom:14px"><h3 style="margin:0 0 10px">Student sign-up setup</h3>'
+    +row(!a.disable_signup,'New accounts are allowed','This is a switch in Supabase, not on this page. Open Supabase, then Authentication, then Sign In / Providers, and turn ON "Allow new users to sign up". Then tap Check again.')
+    +row(a.autoconfirm,'Students can sign in straight away (no email confirmation)','Open Supabase, then Authentication, then Sign In / Providers, then Email, and turn OFF "Confirm email". Then tap Check again.')
+    +'<button class="btn ghost small" onclick="recheckAuth()">Check again</button></div>';
+}
+function signupClosedView(){
+  return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Create your student account</h1><div class="note">Creating new accounts is switched off at the moment. Please contact the Welfare Committee, and try again later.</div><a class="btn dark" href="#/login">Student sign in</a></div></section>';
+}
+AFTER.register=function(){if(state.authSet===undefined&&LIVE)loadAuthSettings().then(function(){if(route()==='register')render()})};
 function noAcct(){return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Student accounts</h1><p>Student accounts are only available on the connected website.</p></div></section>'}
 function loginPrompt(msg){
   return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Please sign in</h1><p>'+esc(msg)+'</p><div class="flex"><a class="btn primary" href="#/login">Student sign in</a><a class="btn dark" href="#/register">Create an account</a></div></div></section>';
@@ -2175,8 +2209,19 @@ async function doStudentLogin(e){
   var id=$('sl_id').value,pw=$('sl_pw').value;
   if(!validStudentId(id)){$('slerr').textContent='Enter your student ID.';return false}
   b.disabled=true;
-  var r=await sb.auth.signInWithPassword({email:studentEmail(id),password:pw});
-  if(r.error){lk.n=(lk.n||0)+1;if(lk.n>=5){lk.until=Date.now()+15*60000;lk.n=0}LS.set('nw_slock',lk);$('slerr').textContent='Wrong student ID or password.';b.disabled=false;return false}
+  var tries=[studentEmail(id)];if(legacyStudentEmail(id)!==tries[0])tries.push(legacyStudentEmail(id));   /* also try the older sign-in name format */
+  var r=null;
+  for(var ti=0;ti<tries.length;ti++){
+    r=await sb.auth.signInWithPassword({email:tries[ti],password:pw});
+    if(!r.error)break;
+    if(loginHint(r.error).key!=='invalid_credentials')break;
+  }
+  if(r.error){
+    var hh=loginHint(r.error);
+    if(hh.key==='invalid_credentials'){lk.n=(lk.n||0)+1;if(lk.n>=5){lk.until=Date.now()+15*60000;lk.n=0}LS.set('nw_slock',lk)}
+    $('slerr').textContent=(hh.key==='invalid_credentials'||hh.key==='rate_limit'||hh.key==='user_banned')?hh.text:hh.text+' (code: '+hh.key+')';
+    b.disabled=false;return false;
+  }
   LS.set('nw_slock',{n:0,until:0});
   state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
   await loadMe();
@@ -2185,6 +2230,7 @@ async function doStudentLogin(e){
 }
 VIEWS.register=function(){
   if(!LIVE)return noAcct();
+  if(state.authSet&&state.authSet.disable_signup)return signupClosedView();
   if(ME)return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>You already have an account</h1><a class="btn dark" href="#/account">Go to My account</a></div></section>';
   return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Create your student account</h1><p>Use your own Student ID. Each Student ID can have only one account.</p><form onsubmit="return doRegister(event)">'
     +'<label for="rg_id">Student ID</label><input type="text" id="rg_id" autocapitalize="characters" autocomplete="username" required>'
@@ -2304,7 +2350,7 @@ ADMIN.students=function(){
   var q=(state.sq||'').toLowerCase(),isSuper=SESSION&&SESSION.role==='super';
   var all=state.students||[];
   var list=all.filter(function(x){return !q||[x.student_id,x.full_name,x.programme,x.level,x.phone].join(' ').toLowerCase().indexOf(q)>-1});
-  var h='<h2>Student accounts</h2>'
+  var h='<h2>Student accounts</h2>'+signupPanel()
     +'<div class="note"><b>About passwords:</b> passwords are never shown, to anyone. Supabase keeps only a scrambled version that nobody can read back, not even administrators. This keeps every student safe if records are ever copied. '+(isSuper?'If a student forgets their password, use <b>Reset password</b>. You get a temporary password to give them, and they must choose a new one at their next sign-in.':'If a student forgets their password, ask the Super Administrator to reset it.')+'</div>';
   if(!state.studentsLoaded)return h+'<p class="hint" style="margin-top:14px">Loading...</p>';
   h+='<div class="stats" style="margin:14px 0"><div class="stat"><b>'+all.length+'</b>Accounts</div>'
