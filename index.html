@@ -383,6 +383,7 @@ footer.foot a{color:var(--brand)}
 /* Connection settings come from config.js. They are public values (the project address and the publishable key).
    A browser can always see them. Security is enforced by Supabase (RLS, roles, two-step code), not by secrecy. */
 var NAMSA_CFG=window.NAMSA_CONFIG||{};
+var RECOVERY_HASH=/[#&]type=recovery/.test(location.hash||'');   /* opened from a "reset password" email */
 var SUPABASE_URL=NAMSA_CFG.url||'';
 var SUPABASE_ANON_KEY=NAMSA_CFG.key||'';
 var sb=null;
@@ -1084,11 +1085,12 @@ async function loadStaff(user,strict){
 }
 async function restoreSession(){
   var r=await sb.auth.getSession();
+  if(RECOVERY_HASH&&r.data&&r.data.session){state.hasSession=true;state.recovery=true;location.hash='#/recovery';return}
   if(r.data&&r.data.session){
     state.hasSession=true;
     var ok=await loadStaff(r.data.session.user,false);
     if(ok){var aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();if(aal.data&&aal.data.currentLevel==='aal2'){SESSION.ok2=true;if(SESSION.role!=='content')await loadReports()}}
-    else{await loadMe()}
+    else{await loadMe();if(ME&&state.justConfirmed){state.justConfirmed=false;toast('Your email is confirmed. Welcome!');location.hash='#/account'}}
   }
 }
 async function loadContent(){
@@ -2167,7 +2169,7 @@ function signupPanel(){
   function row(ok,label,fix){return '<p style="margin:0 0 10px"><span class="badge '+(ok?'good':'bad')+'">'+(ok?'OK':'Needs fixing')+'</span> <b>'+label+'</b>'+(ok?'':'<br><span class="hint">'+fix+'</span>')+'</p>'}
   return '<div class="card" style="margin-bottom:14px"><h3 style="margin:0 0 10px">Student sign-up setup</h3>'
     +row(!a.disable_signup,'New accounts are allowed','This is a switch in Supabase, not on this page. Open Supabase, then Authentication, then Sign In / Providers, and turn ON "Allow new users to sign up". Then tap Check again.')
-    +row(a.autoconfirm,'Students can sign in straight away (no email confirmation)','Open Supabase, then Authentication, then Sign In / Providers, then Email, and turn OFF "Confirm email". Then tap Check again.')
+    +row(!a.autoconfirm,'Email confirmation is ON (students must confirm their email first)','Open Supabase, then Authentication, then Sign In / Providers, then Email, and turn ON "Confirm email". Then tap Check again.')+'<p class="hint" style="margin:0 0 10px">Confirmation emails need a working email sender. Supabase\'s built-in sender only sends a few emails an hour, so for many students set up your own sender (Authentication, SMTP Settings) and set the Site URL to this website (Authentication, URL Configuration).</p>'
     +'<button class="btn ghost small" onclick="recheckAuth()">Check again</button></div>';
 }
 function signupClosedView(){
@@ -2181,10 +2183,19 @@ function loginPrompt(msg){
 async function loadMe(){
   ME=null;if(!LIVE)return;
   try{
-    var s0=await sb.auth.getSession();if(!s0.data||!s0.data.session)return;
+    var s0=await sb.auth.getSession(),ses=s0.data&&s0.data.session;if(!ses)return;
     state.hasSession=true;
-    var q=await sb.from('students').select('student_id,full_name,phone,programme,level,must_change').eq('user_id',s0.data.session.user.id).maybeSingle();
-    if(q.data)ME=q.data;
+    var cols='student_id,full_name,phone,programme,level,must_change';
+    var q=await sb.from('students').select(cols).eq('user_id',ses.user.id).maybeSingle();
+    if(q.data){ME=q.data;return}
+    var md=(ses.user&&ses.user.user_metadata)||{};
+    if(md.student_id&&md.full_name&&validStudentId(md.student_id)){
+      var rg=await sb.rpc('register_student',{p_student_id:normStudentId(md.student_id),p_full_name:String(md.full_name),p_phone:String(md.phone||''),p_programme:String(md.programme||''),p_level:String(md.level||'')});
+      if(!rg.error){
+        var q2=await sb.from('students').select(cols).eq('user_id',ses.user.id).maybeSingle();
+        if(q2.data){ME=q2.data;state.justConfirmed=true}
+      }else{state.profileErr=errMsg(rg.error)}
+    }
   }catch(e){}
 }
 function studentSignOut(){
@@ -2195,36 +2206,41 @@ VIEWS.login=function(){
   if(!LIVE)return noAcct();
   if(ME)return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>You are signed in</h1><p>Signed in as <b>'+esc(ME.student_id)+'</b>.</p><a class="btn dark" href="#/account">Go to My account</a></div></section>';
   return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Student sign in</h1><form onsubmit="return doStudentLogin(event)">'
-    +'<label for="sl_id">Student ID</label><input type="text" id="sl_id" autocomplete="username" autocapitalize="characters" required>'
+    +'<label for="sl_id">Student ID or email</label><input type="text" id="sl_id" autocomplete="username" autocapitalize="characters" required>'
     +'<label for="sl_pw">Password</label><input type="password" id="sl_pw" autocomplete="current-password" required>'
     +'<p id="slerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Sign in</button></form>'
     +'<p style="margin-top:16px">New here? <a href="#/register"><b>Create an account</b></a></p>'
-    +'<p class="hint">Forgot your password? Ask the Welfare Committee to reset it for you.</p></div></section>';
+    +'<p class="hint"><a href="#/forgot">Forgot your password?</a> &middot; <a href="#/check-email">Resend confirmation email</a></p></div></section>';
 };
 async function doStudentLogin(e){
   e.preventDefault();
-  var b=e.target.querySelector('button');
+  var b=e.target.querySelector('button'),err=$('slerr');
   var lk=LS.get('nw_slock',{n:0,until:0});
-  if(lk.until>Date.now()){$('slerr').textContent='Too many tries. Please wait 15 minutes and try again.';return false}
-  var id=$('sl_id').value,pw=$('sl_pw').value;
-  if(!validStudentId(id)){$('slerr').textContent='Enter your student ID.';return false}
-  b.disabled=true;
-  var tries=[studentEmail(id)];if(legacyStudentEmail(id)!==tries[0])tries.push(legacyStudentEmail(id));   /* also try the older sign-in name format */
-  var r=null;
-  for(var ti=0;ti<tries.length;ti++){
-    r=await sb.auth.signInWithPassword({email:tries[ti],password:pw});
-    if(!r.error)break;
-    if(loginHint(r.error).key!=='invalid_credentials')break;
+  if(lk.until>Date.now()){err.textContent='Too many tries. Please wait 15 minutes and try again.';return false}
+  var raw=$('sl_id').value.trim(),pw=$('sl_pw').value;
+  if(!raw||!pw){err.textContent='Enter your Student ID (or email) and password.';return false}
+  b.disabled=true;err.textContent='';
+  function fail(msg,count){if(count){lk.n=(lk.n||0)+1;if(lk.n>=5){lk.until=Date.now()+15*60000;lk.n=0}LS.set('nw_slock',lk)}err.textContent=msg;b.disabled=false;return false}
+  var email='';
+  if(raw.indexOf('@')>-1){email=raw.toLowerCase()}
+  else{
+    if(!validStudentId(raw))return fail('Enter a valid Student ID, or use your email address.',false);
+    var q=await sb.rpc('student_login_email',{p_student_id:normStudentId(raw)});
+    if(q.error)return fail(errMsg(q.error),false);
+    email=q.data||'';
+    if(!email)return fail('Wrong Student ID or password. If you have not confirmed your email yet, sign in with your email address instead.',true);
   }
+  var r=await sb.auth.signInWithPassword({email:email,password:pw});
   if(r.error){
     var hh=loginHint(r.error);
-    if(hh.key==='invalid_credentials'){lk.n=(lk.n||0)+1;if(lk.n>=5){lk.until=Date.now()+15*60000;lk.n=0}LS.set('nw_slock',lk)}
-    $('slerr').textContent=(hh.key==='invalid_credentials'||hh.key==='rate_limit'||hh.key==='user_banned')?hh.text:hh.text+' (code: '+hh.key+')';
-    b.disabled=false;return false;
+    if(hh.key==='invalid_credentials')return fail('Wrong Student ID, email or password.',true);
+    if(hh.key==='email_not_confirmed')return fail('Please confirm your email first. Open the link we sent to your email address. Lost it? Use "Resend confirmation email" below.',false);
+    return fail((hh.key==='rate_limit'||hh.key==='user_banned')?hh.text:hh.text+' (code: '+hh.key+')',false);
   }
   LS.set('nw_slock',{n:0,until:0});
   state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
   await loadMe();
+  if(!ME){toast('Please finish your profile');go('account');return false}
   sb.rpc('note_signin').then(function(){},function(){});
   toast('Welcome back');afterLoginGo();return false;
 }
@@ -2232,9 +2248,10 @@ VIEWS.register=function(){
   if(!LIVE)return noAcct();
   if(state.authSet&&state.authSet.disable_signup)return signupClosedView();
   if(ME)return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>You already have an account</h1><a class="btn dark" href="#/account">Go to My account</a></div></section>';
-  return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Create your student account</h1><p>Use your own Student ID. Each Student ID can have only one account.</p><form onsubmit="return doRegister(event)">'
-    +'<label for="rg_id">Student ID</label><input type="text" id="rg_id" autocapitalize="characters" autocomplete="username" required>'
+  return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Create your student account</h1><p>Use your own Student ID and your own email address. We will email you a link to confirm it. Each Student ID can have only one account.</p><form onsubmit="return doRegister(event)">'
+    +'<label for="rg_id">Student ID</label><input type="text" id="rg_id" autocapitalize="characters" required>'
     +'<label for="rg_nm">Full name</label><input type="text" id="rg_nm" autocomplete="name" required>'
+    +'<label for="rg_em">Email address <span class="hint">(we send a confirmation link here)</span></label><input type="email" id="rg_em" autocomplete="email" required>'
     +'<div class="row two"><div><label for="rg_ph">Phone number</label><input type="tel" id="rg_ph" autocomplete="tel" inputmode="tel" required></div><div><label for="rg_lv">Level</label><select id="rg_lv" required><option value="">Choose</option><option>100</option><option>200</option><option>300</option><option>400</option><option>Other</option></select></div></div>'
     +'<label for="rg_pg">Programme / department</label><input type="text" id="rg_pg" required>'
     +'<label for="rg_pw">Password <span class="hint">(at least 8 characters, with letters and numbers)</span></label><input type="password" id="rg_pw" autocomplete="new-password" required>'
@@ -2245,10 +2262,11 @@ VIEWS.register=function(){
 async function doRegister(e){
   e.preventDefault();
   var b=e.target.querySelector('button'),err=$('rgerr');
-  var id=normStudentId($('rg_id').value),nm=$('rg_nm').value.trim(),ph=$('rg_ph').value.trim(),lv=$('rg_lv').value,pg=$('rg_pg').value.trim(),pw=$('rg_pw').value,p2=$('rg_p2').value;
+  var id=normStudentId($('rg_id').value),nm=$('rg_nm').value.trim(),em=$('rg_em').value.trim().toLowerCase(),ph=$('rg_ph').value.trim(),lv=$('rg_lv').value,pg=$('rg_pg').value.trim(),pw=$('rg_pw').value,p2=$('rg_p2').value;
   var m=[];
   if(!validStudentId(id))m.push('Enter a valid student ID (letters, numbers and / - _ only).');
   if(nm.length<2)m.push('Enter your full name.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em))m.push('Enter a valid email address.');
   if(!/^[0-9+\s()-]{7,}$/.test(ph))m.push('Enter a valid phone number.');
   if(!lv)m.push('Choose your level.');
   if(!pg)m.push('Enter your programme.');
@@ -2256,18 +2274,60 @@ async function doRegister(e){
   if(pw!==p2)m.push('The two passwords do not match.');
   if(m.length){err.innerHTML=m.map(esc).join('<br>');return false}
   b.disabled=true;err.textContent='';
-  var su=await sb.auth.signUp({email:studentEmail(id),password:pw});
+  var av=await sb.rpc('student_id_available',{p_student_id:id});
+  if(av.error){err.textContent=errMsg(av.error);b.disabled=false;return false}
+  if(av.data===false){err.textContent='That student ID already has an account. Please sign in instead.';b.disabled=false;return false}
+  var su=await sb.auth.signUp({email:em,password:pw,options:{emailRedirectTo:siteUrl(),data:{student_id:id,full_name:nm,phone:ph,programme:pg,level:lv}}});
   if(su.error){err.textContent=hintText(authHint(su.error));b.disabled=false;return false}
-  if(!su.data||!su.data.session){err.textContent='The account was created, but it still needs confirming. The committee must turn OFF "Confirm email" in Supabase (Authentication, Sign In / Providers, Email). (code: confirm_email_on)';b.disabled=false;return false}
-  var rg=await sb.rpc('register_student',{p_student_id:id,p_full_name:nm,p_phone:ph,p_programme:pg,p_level:lv});
-  if(rg.error){
+  if(su.data&&su.data.session){
     await sb.auth.signOut();
-    var rc=String(rg.error.code||'');
-    err.textContent=(rc==='PGRST202'||rc==='42P01'||rc==='42883')?'The database update for student accounts has not been run yet. Please tell the Welfare Committee. (code: '+rc+')':errMsg(rg.error);
+    err.textContent='Email confirmation is switched off, so this account cannot be used yet. The committee must turn ON "Confirm email" in Supabase. (code: confirm_email_off)';
     b.disabled=false;return false;
   }
-  state.hasSession=true;state.myReqs=null;state.myReqsLoaded=false;
-  await loadMe();toast('Your account is ready');afterLoginGo();return false;
+  var u=su.data&&su.data.user;
+  if(u&&u.identities&&u.identities.length===0){err.textContent='That email address already has an account. Sign in, use "Forgot your password?", or "Resend confirmation email".';b.disabled=false;return false}
+  state.pendingEmail=em;go('check-email');return false;
+}
+VIEWS['check-email']=function(){
+  if(!LIVE)return noAcct();
+  var em=state.pendingEmail||'';
+  return '<section class="blk"><div class="wrap" style="max-width:480px"><h1>Check your email</h1>'
+    +(em?'<div class="note ok">We sent a confirmation link to <b>'+esc(em)+'</b>. Open it to finish creating your account. It also signs you in.</div>':'<p>Enter your email address and we will send the confirmation link again.</p>')
+    +'<form onsubmit="return doResend(event)"><label for="rs_em">Email address</label><input type="email" id="rs_em" value="'+esc(em)+'" required><p id="rserr" role="alert" style="font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Resend confirmation email</button></form>'
+    +'<p class="hint" style="margin-top:14px">Nothing arrived? Check your spam folder. The link works only once you open it on this website.</p><p><a href="#/login">Back to sign in</a></p></div></section>';
+};
+async function doResend(e){
+  e.preventDefault();
+  var em=$('rs_em').value.trim().toLowerCase(),out=$('rserr');
+  var r=await sb.auth.resend({type:'signup',email:em,options:{emailRedirectTo:siteUrl()}});
+  if(r.error){var h=authHint(r.error);out.style.color='var(--danger)';out.textContent=(h.key==='rate_limit')?h.text:'We could not send the email right now. Please try again in a few minutes.';return false}
+  out.style.color='var(--go)';out.textContent='If that email has an unconfirmed account, a new link is on its way.';return false;
+}
+VIEWS.forgot=function(){
+  if(!LIVE)return noAcct();
+  return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Forgot your password?</h1><p>Enter the email address you used to create your account. We will email you a link to choose a new password.</p><form onsubmit="return doForgot(event)"><label for="fg_em">Email address</label><input type="email" id="fg_em" required><p id="fgerr" role="alert" style="font-weight:600"></p><button class="btn dark" type="submit" style="width:100%">Send reset link</button></form><p style="margin-top:14px"><a href="#/login">Back to sign in</a></p></div></section>';
+};
+async function doForgot(e){
+  e.preventDefault();
+  var em=$('fg_em').value.trim().toLowerCase(),out=$('fgerr');
+  var r=await sb.auth.resetPasswordForEmail(em,{redirectTo:siteUrl()});
+  out.style.color='var(--go)';
+  out.textContent=(r.error&&authHint(r.error).key==='rate_limit')?'Too many attempts. Please wait a few minutes and try again.':'If that email has an account, a reset link is on its way. Check your spam folder too.';
+  return false;
+}
+VIEWS.recovery=function(){
+  if(!LIVE)return noAcct();
+  if(!state.hasSession)return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Link expired</h1><p>This reset link has expired or was already used.</p><a class="btn dark" href="#/forgot">Send a new link</a></div></section>';
+  return '<section class="blk"><div class="wrap" style="max-width:460px"><h1>Choose a new password</h1><label for="rc1">New password <span class="hint">(at least 8 characters, with letters and numbers)</span></label><input type="password" id="rc1" autocomplete="new-password"><label for="rc2">Confirm new password</label><input type="password" id="rc2" autocomplete="new-password"><p id="rcerr" role="alert" style="color:var(--danger);font-weight:600"></p><button class="btn primary" style="width:100%;margin-top:10px" onclick="doRecovery()">Save new password</button></div></section>';
+};
+async function doRecovery(){
+  var a=$('rc1').value,b=$('rc2').value,err=$('rcerr');
+  if(!validPassword(a)){err.textContent='The password needs at least 8 characters, with letters and numbers.';return}
+  if(a!==b){err.textContent='The two passwords do not match.';return}
+  var r=await sb.auth.updateUser({password:a});
+  if(r.error){err.textContent='The password could not be changed. The link may have expired. Please request a new one.';return}
+  try{await sb.rpc('note_password_changed')}catch(e){}
+  state.recovery=false;await loadMe();toast('Password changed');go(ME?'account':'login');
 }
 function completeProfileView(){
   return '<section class="blk"><div class="wrap" style="max-width:520px"><h1>Finish your profile</h1><p>Your account is signed in, but the student profile is missing. Fill it in once.</p><form onsubmit="return doCompleteProfile(event)">'
@@ -2351,15 +2411,15 @@ ADMIN.students=function(){
   var all=state.students||[];
   var list=all.filter(function(x){return !q||[x.student_id,x.full_name,x.programme,x.level,x.phone].join(' ').toLowerCase().indexOf(q)>-1});
   var h='<h2>Student accounts</h2>'+signupPanel()
-    +'<div class="note"><b>About passwords:</b> passwords are never shown, to anyone. Supabase keeps only a scrambled version that nobody can read back, not even administrators. This keeps every student safe if records are ever copied. '+(isSuper?'If a student forgets their password, use <b>Reset password</b>. You get a temporary password to give them, and they must choose a new one at their next sign-in.':'If a student forgets their password, ask the Super Administrator to reset it.')+'</div>';
+    +'<div class="note"><b>Email and passwords:</b> every student must confirm their email address before their account works. Passwords are never shown, to anyone. A student who forgets a password uses "Forgot your password?" on the sign-in page and gets an email link.</div>';
   if(!state.studentsLoaded)return h+'<p class="hint" style="margin-top:14px">Loading...</p>';
   h+='<div class="stats" style="margin:14px 0"><div class="stat"><b>'+all.length+'</b>Accounts</div>'
     +'<div class="stat"><b>'+all.filter(function(x){return agoDays(x.last_sign_in_at)<=7}).length+'</b>Signed in (last 7 days)</div>'
     +'<div class="stat"><b>'+all.filter(function(x){return agoDays(x.created_at)<=7}).length+'</b>Created (last 7 days)</div></div>';
   h+='<label for="sq" style="margin-top:0">Search</label><input type="text" id="sq" value="'+esc(state.sq||'')+'" placeholder="Student ID, name, programme" oninput="state.sq=this.value;keepFocus(\'sq\')">';
   if(!list.length)return h+'<div class="card" style="margin-top:14px"><p style="margin:0">No student accounts found.</p></div>';
-  h+='<p class="hint" style="margin:12px 0 6px">'+list.length+' account(s)</p><div class="scroll-x"><table><thead><tr><th>Student ID</th><th>Name</th><th>Programme / level</th><th>Phone</th><th>Created</th><th>Last signed in</th><th>Requests</th><th>Status</th>'+(isSuper?'<th></th>':'')+'</tr></thead><tbody>'
-    +list.map(function(x,i){return '<tr><td><b>'+esc(x.student_id)+'</b></td><td>'+esc(x.full_name)+'</td><td>'+esc(x.programme||'')+(x.level?' / '+esc(x.level):'')+'</td><td>'+(x.phone?phoneLink(x.phone):'')+'</td><td>'+esc(fmtDay(new Date(x.created_at).getTime()))+'</td><td>'+(x.last_sign_in_at?esc(fmt(new Date(x.last_sign_in_at).getTime())):'<span class="hint">Never</span>')+'</td><td>'+esc(x.requests||0)+'</td><td>'+(x.must_change?'<span class="badge warn">Must change password</span>':'<span class="badge good">Active</span>')+'</td>'+(isSuper?'<td><button class="btn ghost small" onclick="resetStudentPw(\''+esc(x.student_id)+'\')">Reset password</button></td>':'')+'</tr>'}).join('')+'</tbody></table></div>';
+  h+='<p class="hint" style="margin:12px 0 6px">'+list.length+' account(s)</p><div class="scroll-x"><table><thead><tr><th>Student ID</th><th>Name</th><th>Email</th><th>Programme / level</th><th>Phone</th><th>Created</th><th>Last signed in</th><th>Requests</th></tr></thead><tbody>'
+    +list.map(function(x){return '<tr><td><b>'+esc(x.student_id)+'</b></td><td>'+esc(x.full_name)+'</td><td>'+esc(x.email||'')+' '+(x.email_confirmed?'<span class="badge good">Confirmed</span>':'<span class="badge warn">Not confirmed</span>')+'</td><td>'+esc(x.programme||'')+(x.level?' / '+esc(x.level):'')+'</td><td>'+(x.phone?phoneLink(x.phone):'')+'</td><td>'+esc(fmtDay(new Date(x.created_at).getTime()))+'</td><td>'+(x.last_sign_in_at?esc(fmt(new Date(x.last_sign_in_at).getTime())):'<span class="hint">Never</span>')+'</td><td>'+esc(x.requests||0)+'</td></tr>'}).join('')+'</tbody></table></div>';
   var ev=state.studentEvents||[];
   h+='<h2 style="margin-top:28px">Recent account activity</h2>';
   h+=ev.length?'<div class="scroll-x"><table><thead><tr><th>When</th><th>Student</th><th>What happened</th></tr></thead><tbody>'+ev.slice(0,100).map(function(e){return '<tr><td>'+esc(fmt(new Date(e.at).getTime()))+'</td><td><b>'+esc(e.student_id)+'</b>'+(e.name?'<br><span class="hint">'+esc(e.name)+'</span>':'')+'</td><td>'+esc(EV_LABEL[e.event]||e.event)+'</td></tr>'}).join('')+'</tbody></table></div>':'<div class="card"><p style="margin:0">No activity yet.</p></div>';
