@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<title>Signing you in…</title>
+<!-- Upload this file as  auth/callback.html  (inside a folder named auth).
+     The only edits are in ../namsa-sso.js (the three values at its top). Nothing to edit here. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../namsa-sso.js"></script>
+<style>
+  body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#f3f9fa;color:#0a1f2c}
+  .box{background:#fff;padding:28px 32px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);max-width:420px;text-align:center}
+  a{color:#047857;font-weight:700}
+</style>
+</head>
+<body>
+<div class="box" id="box"><b>Signing you in…</b></div>
+<script>
+NamsaSSO.init();
+const box = document.getElementById("box");
+NamsaSSO.handleCallback()
+  .then((s) => {
+    box.textContent = "Welcome, " + (s.name || s.label) + ". Opening the committee…";
+    location.replace("../index.html");
+  })
+  .catch((e) => {
+    box.innerHTML = "";
+    const b = document.createElement("b"); b.textContent = "Could not sign you in";
+    const p = document.createElement("p"); p.textContent = e.message;
+    const a = document.createElement("a"); a.textContent = "Go to the NAMSA-PU portal"; a.href = NamsaSSO.mainUrl(); a.target = "_top";
+    box.append(b, p, a);
+  });
+</script>
+</body>
+</html>
