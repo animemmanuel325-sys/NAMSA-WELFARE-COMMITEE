@@ -3,33 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer-when-downgrade">
 <title>Signing you in…</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="../namsa-sso.js"></script>
 <style>
   body{font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#f3f9fa;color:#0a1f2c}
-  .box{background:#fff;padding:28px 32px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);max-width:420px;text-align:center}
+  .box{background:#fff;padding:28px 32px;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.1);max-width:440px;text-align:center;line-height:1.5}
   a{color:#047857;font-weight:700}
+  .spin{width:28px;height:28px;border:4px solid #d3e7da;border-top-color:#047857;border-radius:50%;margin:0 auto 12px;animation:r 1s linear infinite}
+  @keyframes r{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="box" id="box"><b>Signing you in…</b></div>
+<div class="box" id="box"><div class="spin"></div><b id="msg">Signing you in…</b></div>
 <script>
-NamsaSSO.init();
-const box = document.getElementById("box");
-NamsaSSO.handleCallback()
-  .then((s) => {
-    box.textContent = "Welcome, " + (s.name || s.label) + ". Opening the committee…";
-    location.replace("../index.html");
-  })
-  .catch((e) => {
+/* ===== EDIT THESE TWO LINES ONLY (this committee's own Supabase project) ===== */
+const SUPABASE_URL = "https://THIS-COMMITTEES-PROJECT.supabase.co";
+const SUPABASE_KEY = "THIS-COMMITTEES-PUBLISHABLE-KEY";
+/* ============================================================================ */
+const MAIN_ORIGIN = "https://namsapu359-ux.github.io";                 // your main portal website
+const MAIN_URL    = "https://namsapu359-ux.github.io/NAMSA-PU-WEB/";   // the portal page
+const HOME_URL    = "../index.html";                                    // this committee's home page
+
+(function () {
+  const box = document.getElementById("box"), msg = document.getElementById("msg");
+  let done = false, step = "starting";
+  const say = (t) => { step = t; msg.textContent = t; };
+  function problem(text) {
+    if (done) return; done = true;
     box.innerHTML = "";
-    const b = document.createElement("b"); b.textContent = "Could not sign you in";
-    const p = document.createElement("p"); p.textContent = e.message;
-    const a = document.createElement("a"); a.textContent = "Go to the NAMSA-PU portal"; a.href = NamsaSSO.mainUrl(); a.target = "_top";
+    const b = document.createElement("b"); b.textContent = "Could not open the committee";
+    const p = document.createElement("p"); p.textContent = text;
+    const a = document.createElement("a"); a.textContent = "Go back to the NAMSA-PU portal"; a.href = MAIN_URL; a.target = "_top";
     box.append(b, p, a);
-  });
+  }
+  if (typeof supabase === "undefined") return problem("The Supabase library did not load. Check your internet connection and try again.");
+  if (SUPABASE_URL.includes("THIS-COMMITTEES") || SUPABASE_KEY.includes("THIS-COMMITTEES"))
+    return problem("This page is not set up yet. Open auth/callback.html on GitHub and replace the two lines marked EDIT with this committee's Supabase link and public key.");
+
+  const watchdog = setTimeout(() => problem("This is taking too long (stuck at: " + step + "). Go back to the portal and try again."), 25000);
+
+  (async () => {
+    try {
+      const u = new URL(location.href);
+      const code = u.searchParams.get("code");
+      history.replaceState(null, "", u.pathname);                       // the one-time code leaves the address bar at once
+      if (!code) throw new Error("Please open this committee from the NAMSA-PU portal.");
+
+      // the sign-in must start from the NAMSA-PU portal
+      let ok = false;
+      try { ok = !!document.referrer && new URL(document.referrer).origin === MAIN_ORIGIN; } catch (e) {}
+      const anc = location.ancestorOrigins;
+      if (!ok && anc && anc.length) ok = [...anc].includes(MAIN_ORIGIN);
+      if (!ok && !document.referrer && !(anc && anc.length) && window.parent !== window) ok = true;   // browsers that hide the referrer
+      if (!ok) throw new Error("Please open this committee from the NAMSA-PU portal.");
+
+      say("Asking the committee server…");
+      const url = SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/namsa-sso-exchange";
+      const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 15000);
+      let res;
+      try {
+        res = await fetch(url, { method: "POST", signal: ctl.signal,
+          headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY }, body: JSON.stringify({ code }) });
+      } catch (e) {
+        throw new Error("Could not reach this committee's function namsa-sso-exchange. Check that it is deployed, and that the Supabase link on this page is correct.");
+      } finally { clearTimeout(timer); }
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.token_hash) throw new Error(j.error || j.message || "Sign-in failed (" + res.status + "). Open this committee again from the portal.");
+
+      say("Creating your session…");
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+      let { error } = await sb.auth.verifyOtp({ token_hash: j.token_hash, type: "magiclink" });
+      if (error) ({ error } = await sb.auth.verifyOtp({ token_hash: j.token_hash, type: "email" }));
+      if (error) throw new Error("Could not create the session: " + error.message);
+
+      clearTimeout(watchdog); done = true;
+      const home = new URL(HOME_URL, location.href).href;
+      const s = j.student || {};
+      box.innerHTML = "";
+      const b = document.createElement("b"); b.textContent = "Welcome, " + (s.name || s.label || "student");
+      const p = document.createElement("p"); p.textContent = "Opening the committee…";
+      const a = document.createElement("a"); a.textContent = "Tap here if it does not open"; a.href = home;
+      box.append(b, p, a);
+      location.replace(home);
+    } catch (e) {
+      clearTimeout(watchdog); problem(e.message || "Sign-in failed.");
+    }
+  })();
+})();
 </script>
 </body>
 </html>
